@@ -15,9 +15,28 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Serializer\SerializerInterface;
 
 final class UserController extends AbstractController
 {
+    #[Route('/api/me', name: 'api_me', methods: ['GET'])]
+    public function getCurrentUser(Security $security, SerializerInterface $serializer): JsonResponse
+    {
+        $user = $security->getUser();
+
+        if (!$user) {
+            return $this->json(['message' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Ensure the user entity is used, not just a UserInterface proxy if it's simple
+        if (!$user instanceof \App\Entity\User) {
+             // This case should ideally not happen if proper user loading is configured
+            return $this->json(['message' => 'User data not available'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user:read']);
+    }
     #[Route('/profil/my', name: 'app_user')]
     public function index(Security $security): Response
     {

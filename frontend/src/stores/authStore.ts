@@ -98,28 +98,56 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // If it returns the user, that's great. Otherwise, the frontend will need a /api/me endpoint.
       const responseData = await response.json(); // Try to parse JSON response
 
-      // If responseData contains the user, use it. Otherwise, we might need another fetch.
-      // Let's assume for now json_login returns the user details based on serialization.
-      // This part might need adjustment based on actual backend response.
-      if (responseData && responseData.id) { // A simple check if user data is present
-        set({ user: responseData as User, isAuthenticated: true });
-        localStorage.setItem('twitter-user', JSON.stringify(responseData));
-      } else {
-        // If user data is not in login response, authentication was successful (cookie set),
-        // but we need to fetch user data. For now, this will be a simplified success.
-        // A follow-up "get current user" call would be better.
-        // To keep it simple for this step, we'll set isAuthenticated to true,
-        // but user object might be incomplete if not returned by login.
-        // The frontend's User interface expects several fields.
-        // This is a known point that might need refinement.
-        set({ isAuthenticated: true, user: get().user }); // Keep existing user or null
-        // To actually get the user, we'd ideally call a /api/me endpoint here.
-        // For now, we'll proceed with the assumption that the login might give us enough,
-        // or we handle partial data. The key is that isAuthenticated is true.
+      // Symfony's json_login sets a session cookie but doesn't typically return user data.
+      // We need to make a separate call to fetch user details.
+      // The /api/login_check response might be empty or just a success message.
+      // We can try to parse it, but the main goal is to confirm it's ok (2xx status).
+
+      // We don't need to parse responseData from login_check for user details.
+      // const responseData = await response.json(); // This might fail if response is empty
+
+      // After successful login (cookie is set), fetch user data from /api/me
+      const meResponse = await fetch('/api/me');
+      if (!meResponse.ok) {
+        // Handle error if /api/me fails (e.g., user somehow not authenticated)
+        set({ isAuthenticated: false, user: null }); // Ensure clean state
+        localStorage.removeItem('twitter-user');
+        console.error('Failed to fetch user data after login:', meResponse.status);
+        return false;
       }
-      return true;
+
+      const userData = await meResponse.json();
+      if (userData && userData.id) {
+        // The backend User entity has 'nom' for display name and 'imageFile' for avatar path.
+        // The frontend User interface has 'displayName' and 'avatar'.
+        // We need to map these fields.
+        const mappedUser: User = {
+          id: userData.id,
+          username: userData.username, // Backend now provides this
+          email: userData.email,
+          displayName: userData.nom, // Map nom to displayName
+          bio: userData.bio || '',
+          // Use imageName from backend (which should be just the filename) and construct path
+          avatar: userData.imageName ? `/images/user/${userData.imageName}` : '/placeholder.svg',
+          banner: userData.banner || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=200&fit=crop', // Provide default
+          followers: userData.followers || [], // Assuming these fields might not be in user:read yet
+          following: userData.following || [],
+          createdAt: userData.createdAt || new Date().toISOString(),
+          isVerified: userData.isVerified || false,
+          isPrivate: userData.isPrivate || false,
+        };
+        set({ user: mappedUser, isAuthenticated: true });
+        localStorage.setItem('twitter-user', JSON.stringify(mappedUser));
+        return true;
+      } else {
+        // Failed to get user data from /api/me
+        set({ isAuthenticated: false, user: null });
+        localStorage.removeItem('twitter-user');
+        console.error('User data from /api/me is invalid or missing id');
+        return false;
+      }
     } catch (error) {
-      console.error('Login API call error:', error);
+      console.error('Login or /api/me call error:', error);
       return false;
     }
   },
@@ -138,6 +166,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
         body: JSON.stringify({
           email: userData.email,
+          username: userData.username, // Send username to backend
           password: userData.password,
           displayName: userData.displayName, // This maps to 'nom' in the backend
         }),
@@ -150,15 +179,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false;
       }
 
-      const newUser = await response.json(); // Backend should return the created user object
+      const newUserData = await response.json(); // Backend should return the created user object
 
-      if (newUser && newUser.id) {
-        set({ user: newUser as User, isAuthenticated: true });
-        localStorage.setItem('twitter-user', JSON.stringify(newUser));
+      if (newUserData && newUserData.id) {
+        // Map backend fields (nom, imageFile) to frontend User interface (displayName, avatar)
+        // Also handles username which will be added in a later step.
+        const mappedUser: User = {
+          id: newUserData.id,
+          username: newUserData.username, // Backend now provides this
+          email: newUserData.email,
+          displayName: newUserData.nom, // Map nom to displayName
+          bio: newUserData.bio || '',
+          // Use imageName from backend (which should be just the filename) and construct path
+          avatar: newUserData.imageName ? `/images/user/${newUserData.imageName}` : '/placeholder.svg',
+          banner: newUserData.banner || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=200&fit=crop', // Provide default
+          followers: newUserData.followers || [],
+          following: newUserData.following || [],
+          createdAt: newUserData.createdAt || new Date().toISOString(),
+          isVerified: newUserData.isVerified || false,
+          isPrivate: newUserData.isPrivate || false,
+        };
+        set({ user: mappedUser, isAuthenticated: true });
+        localStorage.setItem('twitter-user', JSON.stringify(mappedUser));
         return true;
       } else {
         // Should not happen if backend returns user on 201 Created
-        // console.error('Signup successful but no user data returned');
+        console.error('Signup successful but no or invalid user data returned from /api/register');
         return false;
       }
     } catch (error) {

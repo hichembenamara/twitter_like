@@ -14,10 +14,13 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\Ignore; // Keep if used, or remove if not
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
+#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
 #[UniqueEntity(fields: ['email'], message: 'Impossible de crée le compte : cette email est déjà associé à un compte.')]
+#[UniqueEntity(fields: ['username'], message: 'Ce nom d\'utilisateur est déjà pris.')]
 #[Vich\Uploadable]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -30,6 +33,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180)]
     #[Groups(['user:read', 'post:read', 'comment:read'])]
     private ?string $email = null;
+
+    #[ORM\Column(length: 100, unique: true)]
+    #[Groups(['user:read', 'post:read', 'comment:read'])]
+    #[Assert\NotBlank(message: "Le nom d'utilisateur ne peut pas être vide.")]
+    #[Assert\Length(min: 3, max: 100, minMessage: "Le nom d'utilisateur doit faire au moins 3 caractères.", maxMessage: "Le nom d'utilisateur ne peut pas dépasser 100 caractères.")]
+    // Regex to allow alphanumeric and underscores, common for usernames
+    #[Assert\Regex(pattern: "/^[a-zA-Z0-9_]+$/", message: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et underscores (_).")]
+    private ?string $username = null;
 
     /**
      * @var list<string> The user roles
@@ -47,6 +58,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 200)]
     #[Groups(['user:read', 'post:read', 'comment:read'])]
+    #[Assert\NotBlank(message: "Le nom d'affichage ne peut pas être vide.")]
     private ?string $nom = null;
 
     #[ORM\Column(length: 200)]
@@ -116,6 +128,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
+    }
+
+    public function getUsername(): ?string
+    {
+        return $this->username;
+    }
+
+    public function setUsername(string $username): static
+    {
+        $this->username = $username;
+
+        return $this;
     }
 
     /**

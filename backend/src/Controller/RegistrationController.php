@@ -60,9 +60,13 @@ class RegistrationController extends AbstractController
             // More complex validation can be done via constraints on a DTO or directly on the entity
             $constraints = new Assert\Collection([
                 'email' => [new Assert\NotBlank(), new Assert\Email()],
-                'password' => [new Assert\NotBlank(), new Assert\Length(['min' => 6])], // Example: min length for password
+                'password' => [new Assert\NotBlank(), new Assert\Length(['min' => 6])],
                 'displayName' => [new Assert\NotBlank()], // Maps to 'nom'
-                 // 'username' is also in frontend store, decide if it's needed or maps to 'nom' as well
+                'username' => [ // Add validation rules for username based on User entity constraints
+                    new Assert\NotBlank(),
+                    new Assert\Length(['min' => 3, 'max' => 100]),
+                    new Assert\Regex(pattern: "/^[a-zA-Z0-9_]+$/")
+                ],
             ]);
 
             $violations = $validator->validate($data, $constraints);
@@ -83,11 +87,12 @@ class RegistrationController extends AbstractController
 
             $user = new User();
             $user->setEmail($data['email']);
+            $user->setUsername($data['username']); // Set username
             $user->setNom($data['displayName']); // Map displayName to nom
             $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
             $user->setRoles(['ROLE_USER']); // Default role
 
-            // Additional validation on the User entity itself (e.g. UniqueEntity for email)
+            // Additional validation on the User entity itself (e.g. UniqueEntity for email and username)
             // This will be caught by Doctrine if not validated explicitly before persist/flush
             $entityViolations = $validator->validate($user);
             if (count($entityViolations) > 0) {
