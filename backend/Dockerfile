@@ -21,6 +21,9 @@ COPY . .
 # Installer les dépendances PHP (Composer)
 RUN composer install --no-interaction --no-progress --prefer-dist
 
+# 👉 Ajouter nelmio/cors-bundle
+RUN composer require nelmio/cors-bundle
+
 # Configurer Apache pour servir le dossier public/
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
  && printf "\n<Directory /var/www/html/public>\n  AllowOverride All\n  Require all granted\n</Directory>\n" >> /etc/apache2/apache2.conf
