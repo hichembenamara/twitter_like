@@ -20,6 +20,10 @@ security:
                 login_path: app_login
                 check_path: app_login
                 enable_csrf: true
+            json_login: # API login
+                check_path: /api/login_check # The path the frontend will POST to
+                # success_handler: lexik_jwt_authentication.handler.authentication_success # Example if using JWT
+                # failure_handler: lexik_jwt_authentication.handler.authentication_failure # Example if using JWT
             logout:
                 path: app_logout
                 # where to redirect after logout
@@ -34,13 +38,22 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
+        # Public API endpoints
+        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/api/register, roles: PUBLIC_ACCESS } # For future registration endpoint
+
+        # Protected API endpoints (example, adjust as needed)
+        - { path: ^/api, roles: ROLE_USER }
+
+        # Existing web UI access controls
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
         - { path: ^/profil/my, roles: ROLE_USER }
         - { path: ^/feed, roles: ROLE_USER }
         - { path: ^/feed/newPost, roles: ROLE_USER }
-        - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/profile, roles: ROLE_USER } # This might be /profil/{id}, check UserController
         - { path: ^/myposts, roles: ROLE_USER }
+
 
 when@test:
     security:

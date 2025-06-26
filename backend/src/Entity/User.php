@@ -12,7 +12,8 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
 use Symfony\Component\HttpFoundation\File\File;
-use Symfony\Component\Serializer\Annotation\Ignore;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\Ignore; // Keep if used, or remove if not
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
@@ -23,39 +24,49 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read', 'post:read', 'comment:read'])] // Added post:read and comment:read for context
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Groups(['user:read', 'post:read', 'comment:read'])]
     private ?string $email = null;
 
     /**
      * @var list<string> The user roles
      */
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private array $roles = [];
 
     /**
      * @var string The hashed password
      */
     #[ORM\Column]
+    // Password should generally not be serialized
     private ?string $password = null;
 
     #[ORM\Column(length: 200)]
+    #[Groups(['user:read', 'post:read', 'comment:read'])]
     private ?string $nom = null;
 
     #[ORM\Column(length: 200)]
+    #[Groups(['user:read', 'post:read', 'comment:read'])] // Path to image file or name
     private ?string $imageFile = null;
 
     #[ORM\Column(type: 'string', nullable:true)]
+    #[Groups(['user:read', 'post:read', 'comment:read'])] // Actual image name if different
     private ?string $imageName = null;
 
     #[ORM\Column(nullable:true)]
+    #[Groups(['user:read'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['user:read'])]
     private ?string $bio = null;
 
     #[ORM\Column(type: Types::BOOLEAN, nullable: true)]
+    #[Groups(['user:read'])]
     private ?bool $profil_public = null;
 
     /**
