@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - ROLLUP_NO_NATIVE=true
+    command: npm run dev -- --host --port 5173
+
+  backend:
+    env_file:
+      - .env.docker
+    build:
+      context: ./backend
+    ports:
+      - "8001:80"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/var/www/html:cached
+      - /var/www/html/vendor
+
+  db:
+    image: mysql:8.0
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: symfony_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: symfony
+      MYSQL_PASSWORD: symfony
+    volumes:
+      - mysqldata:/var/lib/mysql
+
+volumes:
+  mysqldata:
