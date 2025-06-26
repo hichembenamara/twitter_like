@@ -15,6 +15,9 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 final class PostController extends AbstractController
 {
@@ -144,5 +147,93 @@ final class PostController extends AbstractController
             'controller_name' => 'FeedController',
             'post' => $post,
         ]);
+    }
+
+    #[Route('/api/posts', name: 'api_posts_list', methods: ['GET'])]
+    public function apiGetPosts(PostRepository $postRepository): JsonResponse
+    {
+        // Ensure user is authenticated (this should be handled by firewall access_control)
+        // $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY'); // Or appropriate role
+
+        // Fetch posts, ordered by creation date descending for a typical feed
+        // Add pagination later if needed (e.g., $request->query->getInt('page', 1))
+        $posts = $postRepository->findBy([], ['Creation' => 'DESC']);
+
+        // Return JSON response using serialization groups
+        // The 'post:read' group on Post entity will trigger 'user:read' on User and 'comment:read' on Comment
+        return $this->json($posts, Response::HTTP_OK, [], ['groups' => 'post:read']);
+    }
+
+    #[Route('/api/posts', name: 'api_posts_create', methods: ['POST'])]
+    public function apiCreatePost(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        ValidatorInterface $validator
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('ROLE_USER'); // Ensure user is authenticated
+
+        try {
+            $data = json_decode($request->getContent(), true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return $this->json(['message' => 'Invalid JSON payload: ' . json_last_error_msg()], Response::HTTP_BAD_REQUEST);
+            }
+
+            $constraints = new Assert\Collection([
+                'content' => [new Assert\NotBlank()], // Maps to Post->Contenu
+                'image' => [new Assert\Optional([new Assert\Url()])], // Maps to Post->Media
+                // 'titre' is not sent from frontend's current addTweet, make it optional or derive
+            ]);
+
+            $violations = $validator->validate($data, $constraints);
+            if (count($violations) > 0) {
+                $errors = [];
+                foreach ($violations as $violation) {
+                    $errors[preg_replace('/[\[\]]/', '', $violation->getPropertyPath())] = $violation->getMessage();
+                }
+                return $this->json(['errors' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $user = $this->getUser();
+            if (!$user instanceof \App\Entity\User) {
+                // This should not happen if denyAccessUnlessGranted ROLE_USER passes
+                return $this->json(['message' => 'User not authenticated or not found.'], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $post = new Post();
+            $post->setUserCreated($user);
+            $post->setContenu($data['content']);
+
+            // Handle Titre: either make it optional in Post entity, or derive/require it
+            // For now, let's derive a short title. Max 50 chars for Post->Titre.
+            $titre = substr($data['content'], 0, 45);
+            if (strlen($data['content']) > 45) {
+                $titre .= '...';
+            }
+            $post->setTitre($titre);
+
+            if (!empty($data['image'])) {
+                $post->setMedia($data['image']);
+            }
+            $post->setCreation(new \DateTime());
+
+            // Validate the Post entity itself (e.g., length constraints if any)
+            $entityViolations = $validator->validate($post);
+            if (count($entityViolations) > 0) {
+                $errors = [];
+                foreach ($entityViolations as $violation) {
+                    $errors[$violation->getPropertyPath()] = $violation->getMessage();
+                }
+                return $this->json(['errors' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $entityManager->persist($post);
+            $entityManager->flush();
+
+            return $this->json($post, Response::HTTP_CREATED, [], ['groups' => 'post:read']);
+
+        } catch (\Exception $e) {
+            // Log $e->getMessage(), $e->getTraceAsString()
+            return $this->json(['message' => 'An error occurred while creating the post.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }
