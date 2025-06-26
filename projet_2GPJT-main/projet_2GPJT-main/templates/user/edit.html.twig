@@ -1,0 +1,34 @@
+{% block title %}Modification profil{% endblock %}
+
+{% extends 'base.html.twig' %}
+
+{% block body %}
+
+    <div class="container">
+        {{ form_start(form) }}
+        <div class="row">
+            <div class="col-3">
+                {{ form_row(form.nom, {'attr': {'class': 'form-control'},
+                    label: "Nom d'utilisateur"
+                }) }}
+
+                {{ form_row(form.bio, {'attr': {'class': 'form-control'},
+                    label: "Description"
+                }) }}
+
+                {{ form_row(form.imageFile, {'attr': {'class': 'form-control'},
+                    label: "Photo de profil"
+                }) }}
+
+                <div class="form-check form-switch mt-3 mb-3">
+                    {{ form_row(form.profil_verif, {'attr' : {'class': 'form-check-input'},
+                        label: "Visibilité du profil"
+                    }) }}
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-success mb-5">{{ button_label|default('Enregistrer') }}</button>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

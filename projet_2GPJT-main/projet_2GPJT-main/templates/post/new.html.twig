@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}TwitterLike{% endblock %}
+
+{% block body %}
+    <div class="container">
+        {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button class="btn btn-success">{{ button_label|default('Ajouter') }}</button>
+        {{ form_end(form) }}
+        <a class="btn btn-secondary" href="{{ path('app_feed') }}">Retour</a>
+    </div>
+{% endblock %}

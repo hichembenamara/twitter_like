@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+{% block head %}
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="{{ asset('styles/app_feed.css') }}">
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+              integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+              integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+              crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+{% endblock %}
+{% block body %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Barre de navigation à gauche -->
+            <div class="col-md-3 sidebar d-flex flex-column align-items-center pt-3">
+                <div class="icon-container">
+                    <a href="index.html" class="d-flex align-items-center"><i class="bi bi-house-fill icon active mb-3"></i><span class="icon-label">Accueil</span></a>
+                    <a href="#" class="d-flex align-items-center"><i class="bi bi-search-heart-fill icon mb-3"></i><span class="icon-label">Recherche</span></a>
+                    <a href="#" class="d-flex align-items-center"><i class="bi bi-plus-square-fill icon mb-3"></i><span class="icon-label">Créer un post</span></a>
+                    <a href="#" class="d-flex align-items-center"><i class="bi bi-heart-fill icon mb-3"></i><span class="icon-label">Favoris</span></a>
+                    <a href="profil.html" class="d-flex align-items-center"><i class="bi bi-person-fill icon mb-3"></i><span class="icon-label">Profil</span></a>
+                </div>
+            </div>
+
+            <!-- Fil d'actu -->
+            <div class="col-md-6 feed px-0">
+                <div class="d-flex justify-content-around tabs">
+                    <div class="tab active">Pour toi</div>
+                    <div class="tab">Suivi(e)s</div>
+                </div>
+                {% for post in post %}
+                    <div class="post p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <strong>{{ post.usercreated.nom }}</strong>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg" alt="Verified" class="verified ms-1">
+                        </div>
+                        <p>
+                            <strong>{{ post.titre }}</strong> {{ post.contenu }}
+                        </p>
+                        {% if post.media != NULL %}
+                            <img src="{{ post.media }}" class="card-img-top" alt="...">
+                        {% endif %}
+                        <p><small class="text-muted">{{ post.creation|date('d-m-Y H:i:s', "Europe/Paris") }}</small></p>
+                        <div class="mb-2">
+                            <a style="text-decoration: none"  href="{{ path('like_post', {id: post.id}) }}">
+                                {% if app.user in post.likes ? '' : 'hidden' %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-balloon-heart" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="m8 2.42-.717-.737c-1.13-1.161-3.243-.777-4.01.72-.35.685-.451 1.707.236 3.062C4.16 6.753 5.52 8.32 8 10.042c2.479-1.723 3.839-3.29 4.491-4.577.687-1.355.587-2.377.236-3.061-.767-1.498-2.88-1.882-4.01-.721zm-.49 8.5c-10.78-7.44-3-13.155.359-10.063q.068.062.132.129.065-.067.132-.129c3.36-3.092 11.137 2.624.357 10.063l.235.468a.25.25 0 1 1-.448.224l-.008-.017c.008.11.02.202.037.29.054.27.161.488.419 1.003.288.578.235 1.15.076 1.629-.157.469-.422.867-.588 1.115l-.004.007a.25.25 0 1 1-.416-.278c.168-.252.4-.6.533-1.003.133-.396.163-.824-.049-1.246l-.013-.028c-.24-.48-.38-.758-.448-1.102a3 3 0 0 1-.052-.45l-.04.08a.25.25 0 1 1-.447-.224l.235-.468ZM6.013 2.06c-.649-.18-1.483.083-1.85.798-.131.258-.245.689-.08 1.335.063.244.414.198.487-.043.21-.697.627-1.447 1.359-1.692.217-.073.304-.337.084-.398"/>
+                                    </svg>
+                                {% else %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-balloon-heart-fill" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M8.49 10.92C19.412 3.382 11.28-2.387 8 .986 4.719-2.387-3.413 3.382 7.51 10.92l-.234.468a.25.25 0 1 0 .448.224l.04-.08c.009.17.024.315.051.45.068.344.208.622.448 1.102l.013.028c.212.422.182.85.05 1.246-.135.402-.366.751-.534 1.003a.25.25 0 0 0 .416.278l.004-.007c.166-.248.431-.646.588-1.115.16-.479.212-1.051-.076-1.629-.258-.515-.365-.732-.419-1.004a2 2 0 0 1-.037-.289l.008.017a.25.25 0 1 0 .448-.224l-.235-.468ZM6.726 1.269c-1.167-.61-2.8-.142-3.454 1.135-.237.463-.36 1.08-.202 1.85.055.27.467.197.527-.071.285-1.256 1.177-2.462 2.989-2.528.234-.008.348-.278.14-.386"/>
+                                    </svg>
+                                {% endif %}
+                                J'aime
+                            </a>
+                        </div>
+
+                        <h4>Commentaire(s)</h4>
+                        {% for comment in post.comment %}
+                        <div class="card mb-3" style="width: 32.5rem;">
+                            <div class="card-body">
+                                <h5 class="card-title">Utilisateur : {{ comment.usercreated.nom }}</h5>
+                                <p class="card-text">Commentaire : {{ comment.Contenu }}</p>
+                                <p class="card-text"><small class="text-muted">{{ comment.Creation|date('d-m-Y H:i:s', "Europe/Paris") }}</small></p>
+                                {% if (comment.usercreated.id == usercreatedid) %}
+                                    <form name="comment[delete]" method="post" action="{{ path("comment_delete", {"id": comment.id}) }}">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ comment.id) }}">
+                                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% else %}
+                            <p>Aucun commentaire</p>
+                        {% endfor %}
+
+                        {{ form_start(form) }}
+                        <button type="submit" class="btn btn-success">Ajouter</button>
+                        {{ form_end(form) }}
+                    </div>
+                {% else %}
+                        <p>Aucune donnée</p>
+                {% endfor %}
+            </div>
+            <!-- Barre de nav à droite -->
+            <div class="col-md-3 rightbar p-3">
+                <input type="text" class="form-control mb-3" placeholder="Search Twitter">
+                <h6>Suivis(es)</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Bessie Cooper</span>
+                    <button class="btn btn-outline-primary btn-sm">Profile</button>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Jenny Wilson</span>
+                    <button class="btn btn-outline-primary btn-sm">Profile</button>
+                </div>
+                <a href="#" class="small">Afficher plus</a>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

@@ -1,0 +1,19 @@
+body {
+    background-color: white;
+}
+
+#nav {
+    display: block;
+    max-width: 15%;
+    max-height: 15%;
+}
+
+#pp_profil {
+    width: 5%;
+    height: 5%;
+}
+
+#pp_post {
+    width: 10%;
+    height: 10%;
+}

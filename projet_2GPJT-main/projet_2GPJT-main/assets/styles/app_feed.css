@@ -1,0 +1,116 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    color: #000000;
+    margin: 0;
+    padding: 0;
+}
+.sidebar {
+    background-color: #f0f0f0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+    border-right: 1px solid #ccc;
+}
+.logo {
+    margin-bottom: auto;
+    width: 150px;
+}
+.icon {
+    margin: 2.5rem 0;
+    font-size: 2rem;
+    color: #333333;
+    cursor: pointer;
+}
+.icon-label {
+    margin-left: 1rem;
+    color: inherit;
+    font-size: 1.5rem;
+}
+.icon.active, .icon.active + .icon-label {
+    color: #5FC2BA;
+}
+.feed {
+    background-color: #f9f9f9;
+    min-height: 100vh;
+    padding: 1rem;
+}
+.tabs {
+    background-color: #ffffff;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+}
+.tab {
+    padding: 0.5rem 1rem;
+    color: #333333;
+    cursor: pointer;
+    border-radius: 5px;
+}
+.tab.active {
+    background-color: #5FC2BA;
+    color: #ffffff;
+    font-weight: bold;
+}
+.post {
+    background-color: #eaeaea;
+    border-radius: 10px;
+    margin: 1rem 0;
+    padding: 1rem;
+}
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+.verified {
+    width: 20px;
+    height: 20px;
+}
+.rightbar {
+    background-color: #f0f0f0;
+    color: #000000;
+    padding: 1rem;
+    border-left: 1px solid #ccc;
+}
+.rightbar input {
+    margin-bottom: 1rem;
+}
+.rightbar h6 {
+    margin-bottom: 1rem;
+}
+.rightbar .d-flex {
+    margin-bottom: 0.5rem;
+}
+.rightbar a {
+    color: #007bff;
+}
+.sidebar .icon-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+.sidebar .icon-container a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding-left: 1rem;
+}
+a {
+    text-decoration: none;
+    color: inherit;
+}
+a .icon {
+    text-decoration: none;
+    color: inherit;
+}
+.icon-label {
+    text-decoration: none;
+    color: inherit;
+}
