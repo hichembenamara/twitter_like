@@ -1,43 +1,95 @@
-version: "3.8"
+version: "3.9"
+
+###########################################################################
+# Volumes nommés (persistants même après `docker compose down`)
+###########################################################################
+volumes:
+  mysqldata: # données MySQL
+  backend_vendor: # dossier vendor/ (PHP)
+  frontend_node_modules: # node_modules/ (front)
+
+###########################################################################
+# Réseau par défaut                                                    #
+# (docker compose crée un réseau bridge privé ; on garde le nom par défaut)
+###########################################################################
 
 services:
+  #########################################################################
+  # 1. Base de données MySQL                                             #
+  #########################################################################
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-symfony_db}
+      MYSQL_USER: ${MYSQL_USER:-symfony}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-symfony}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    ports:
+      - "3307:3306" # host ↔ conteneur
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u${MYSQL_USER:-symfony}",
+          "-p${MYSQL_PASSWORD:-symfony}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  #########################################################################
+  # 2. Backend Symfony + Apache                                          #
+  #########################################################################
+  backend:
+    build:
+      context: ./backend
+      # Le Dockerfile (dans ./backend) copie aussi /usr/bin/composer
+    ports:
+      - "8001:80" # http://localhost:8001
+    env_file:
+      - ./backend/.env.docker # variables spécifiques à l’appli
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+      PHP_DISPLAY_ERRORS: "On"
+    volumes:
+      # ① Hot-reload : on monte tout le code
+      - ./backend:/var/www/html:cached
+      # ② vendor/ persiste dans un volume nommé, jamais écrasé
+      - backend_vendor:/var/www/html/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  #########################################################################
+  # 3. Frontend Vite (React / Vue / Svelte …)                            #
+  #########################################################################
   frontend:
     build:
       context: ./frontend
     ports:
-      - "5173:5173"
+      - "5173:5173" # http://localhost:5173
+    working_dir: /app
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - frontend_node_modules:/app/node_modules
     environment:
-      - ROLLUP_NO_NATIVE=true
+      NODE_ENV: development
+      ROLLUP_NO_NATIVE: "true"
+      CHOKIDAR_USEPOLLING: "true"
     command: npm run dev -- --host --port 5173
-
-  backend:
-    env_file:
-      - .env.docker
-    build:
-      context: ./backend
-    ports:
-      - "8001:80"
-    depends_on:
-      - db
-    volumes:
-      - ./backend:/var/www/html:cached
-      - /var/www/html/vendor
-
-  db:
-    image: mysql:8.0
-    restart: always
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_DATABASE: symfony_db
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: symfony
-      MYSQL_PASSWORD: symfony
-    volumes:
-      - mysqldata:/var/lib/mysql
-
-volumes:
-  mysqldata:
+    restart: unless-stopped

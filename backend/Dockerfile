@@ -1,33 +1,37 @@
-FROM php:8.2-apache
+# syntax=docker/dockerfile:1.7
 
-# Installer les extensions PHP + dépendances nécessaires
-RUN apt-get update && apt-get install -y \
-    git unzip zip curl libzip-dev libicu-dev libonig-dev libxml2-dev \
-    libpng-dev libjpeg-dev libfreetype6-dev libmariadb-dev \
-    && docker-php-ext-install pdo pdo_mysql intl zip
+##############################
+# Stage 0 — build + vendor   #
+##############################
+FROM composer:2.7 AS build
 
-# Activer mod_rewrite pour Apache (pour Symfony)
-RUN a2enmod rewrite
+WORKDIR /app
 
-# Définir le dossier de travail
-WORKDIR /var/www/html
+# 1️⃣  On ne copie que la définition des dépendances
+COPY composer.json composer.lock ./
 
-# Installer Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# 2️⃣  Cache BuildKit pour accélérer les installs
+RUN --mount=type=cache,target=/root/.composer \
+    composer install --prefer-dist --no-interaction --no-progress \
+        --no-scripts --classmap-authoritative
 
-# Copier le code Symfony dans le conteneur
+# 3️⃣  On copie tout le code SAUF vendor (voir .dockerignore)
 COPY . .
 
+#################################
+# Stage 1 — Runtime (Apache-PHP) #
+#################################
+FROM php:8.3-apache
 
+# … mêmes RUN apt-get, extensions PHP, vhost, etc.
 
-# Fixer les permissions (facultatif)
-RUN chown -R www-data:www-data var vendor
+WORKDIR /var/www/html
 
-EXPOSE 80
+# 4️⃣  On recopie d’un coup tout ce que le stage build a produit
+#     (code + vendor déjà installé) ► pas de risque d’écrasement
+COPY --from=build --chown=www-data:www-data /app ./
 
-# Lancer Apache
-CMD ["apache2-foreground"]
-
-# ── Configure Apache pour Symfony ──
-RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
- && printf "\n<Directory /var/www/html/public>\n  AllowOverride All\n  Require all granted\n</Directory>\n" >> /etc/apache2/apache2.conf
+# 5️⃣  Répertoires écriture + user non-root
+RUN mkdir -p var/cache var/log public/images && \
+    chown -R www-data:www-data var public/images
+USER www-data
