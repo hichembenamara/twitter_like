@@ -1,4 +1,3 @@
-# Default configuration for NelmioCorsBundle
 nelmio_cors:
     defaults:
         origin_regex: true
