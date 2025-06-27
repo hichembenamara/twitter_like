@@ -2,52 +2,46 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useUserStore } from '@/stores/userStore';
+import { useFriendStore, Friend } from '@/stores/friendStore';
 import { useAuthStore } from '@/stores/authStore';
 import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface UserProfileCardProps {
-  userId: string;
+  user: Friend;
   onClose?: () => void;
 }
 
-const UserProfileCard: React.FC<UserProfileCardProps> = ({ userId, onClose }) => {
-  const { getUserById, followUser, unfollowUser, isFollowing } = useUserStore();
+const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onClose }) => {
+  const { addFriend, removeFriend, isFriend } = useFriendStore();
   const currentUser = useAuthStore(state => state.user);
-  const user = getUserById(userId);
 
   if (!user || !currentUser) return null;
 
-  const isCurrentUserFollowing = isFollowing(userId, currentUser.id);
-  const isOwnProfile = currentUser.id === userId;
+  const isCurrentUserFollowing = isFriend(user.id);
+  const isOwnProfile = currentUser.id === user.id;
 
   const handleFollowToggle = () => {
     if (isCurrentUserFollowing) {
-      unfollowUser(userId, currentUser.id);
+      removeFriend(user.id);
     } else {
-      followUser(userId, currentUser.id);
+      addFriend(user.id);
     }
   };
 
   return (
     <Card className="p-6 max-w-md mx-auto">
       <div className="relative">
-        <img
-          src={user.banner}
-          alt="Profile banner"
-          className="w-full h-32 object-cover rounded-lg"
-        />
+        <div className="w-full h-32 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg" />
         <div className="relative -mt-8 flex justify-center">
           <div className="relative">
             <img
               src={user.avatar}
               alt={user.displayName}
-              className="w-16 h-16 rounded-full border-4 border-white"
+              className="w-16 h-16 rounded-full border-4 border-white object-cover"
             />
-            {user.isVerified && (
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">✓</span>
-              </div>
+            {user.isOnline && (
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
             )}
           </div>
         </div>
@@ -63,18 +57,20 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({ userId, onClose }) =>
         
         <div className="flex justify-center space-x-6 mt-4 text-sm">
           <span>
-            <strong>{user.following.length}</strong>{' '}
-            <span className="text-gray-500">Following</span>
+            <strong>{user.mutualFriends}</strong>{' '}
+            <span className="text-gray-500">Amis communs</span>
           </span>
           <span>
-            <strong>{user.followers.length}</strong>{' '}
-            <span className="text-gray-500">Followers</span>
+            <span className={`inline-block w-2 h-2 rounded-full mr-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <span className="text-gray-500">{user.isOnline ? 'En ligne' : 'Hors ligne'}</span>
           </span>
         </div>
         
-        <p className="text-gray-500 text-sm mt-2">
-          Joined {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
-        </p>
+        {!user.isOnline && (
+          <p className="text-gray-500 text-sm mt-2">
+            Vu pour la dernière fois {formatDistanceToNow(new Date(user.lastSeen), { addSuffix: true, locale: fr })}
+          </p>
+        )}
         
         <div className="flex space-x-2 mt-4">
           {!isOwnProfile && (

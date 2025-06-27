@@ -21,24 +21,20 @@ FROM base AS development
 # Copy source code
 COPY . .
 
-# Create user for security
-RUN addgroup -g 1001 -S nodejs \
-    && adduser -S nextjs -u 1001
-
-# Change ownership of the app directory
-RUN chown -R nextjs:nodejs /app
-USER nextjs
-
 # Expose port
 EXPOSE 5173
 
-# Development command
+# Development command (run as root for simplicity in dev mode)
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
 #################################
 # Production build stage
 #################################
 FROM base AS build
+
+# Set build-time environment variables
+ARG VITE_API_URL=http://localhost:8001
+ENV VITE_API_URL=$VITE_API_URL
 
 # Copy source code
 COPY . .
@@ -71,9 +67,9 @@ server {
         try_files \$uri \$uri/ /index.html;
     }
 
-    # API proxy to backend
+    # API proxy to backend (proxy to host machine since containers are separate)
     location /api/ {
-        proxy_pass http://backend:80/api/;
+        proxy_pass http://host.docker.internal:8001/api/;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;

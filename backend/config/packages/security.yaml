@@ -41,6 +41,7 @@ security:
         # Public API endpoints
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS } # For future registration endpoint
+        - { path: ^/api/logout, roles: PUBLIC_ACCESS } # Allow logout for any authenticated user
 
         # Protected API endpoints (example, adjust as needed)
         - { path: ^/api, roles: ROLE_USER }

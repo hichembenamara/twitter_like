@@ -6,13 +6,12 @@ version: "3.9"
 volumes:
   mysqldata: # MySQL data
   backend_vendor: # PHP vendor directory
-  frontend_node_modules: # Node.js modules
 
 ###########################################################################
 # Networks
 ###########################################################################
 networks:
-  twitter_network:
+  twitter_a_network:
     driver: bridge
 
 services:
@@ -21,7 +20,7 @@ services:
   #########################################################################
   db:
     image: mysql:8.0
-    container_name: twitter_db
+    container_name: twitter_a_db
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-symfony_db}
       MYSQL_USER: ${MYSQL_USER:-symfony}
@@ -32,7 +31,7 @@ services:
     volumes:
       - mysqldata:/var/lib/mysql
     networks:
-      - twitter_network
+      - twitter_a_network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u${MYSQL_USER:-symfony}", "-p${MYSQL_PASSWORD:-symfony}"]
@@ -48,7 +47,7 @@ services:
     build:
       context: ./backend
       target: development
-    container_name: twitter_backend
+    container_name: twitter_a_backend
     ports:
       - "8001:80"
     env_file:
@@ -65,7 +64,7 @@ services:
       # Persist vendor directory
       - backend_vendor:/var/www/html/vendor
     networks:
-      - twitter_network
+      - twitter_a_network
     depends_on:
       db:
         condition: service_healthy
@@ -83,30 +82,20 @@ services:
   frontend:
     build:
       context: ./frontend
-      target: development
-    container_name: twitter_frontend
+      target: production
+    container_name: twitter_a_frontend
     ports:
-      - "5173:5173"
-    volumes:
-      # Development: mount source code for hot reload
-      - ./frontend:/app:cached
-      # Persist node_modules
-      - frontend_node_modules:/app/node_modules
+      - "5173:80"
     environment:
-      NODE_ENV: development
       VITE_API_URL: http://localhost:8001
-      ROLLUP_NO_NATIVE: "true"
-      CHOKIDAR_USEPOLLING: "true"
-      # Increase memory limit for Node.js
-      NODE_OPTIONS: "--max_old_space_size=4096"
     networks:
-      - twitter_network
+      - twitter_a_network
     depends_on:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173 || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:80 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 30s

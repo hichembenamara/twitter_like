@@ -19,6 +19,28 @@ export default {
 		},
 		extend: {
 			colors: {
+				// Modern Twitter-A color palette
+				'twitter-dark': '#0F1419',
+				'twitter-blue': '#1A202C', 
+				'twitter-slate': '#4A5568',
+				'twitter-teal': '#38B2AC',
+				'twitter-white': '#FFFFFF',
+				'twitter-accent': '#667EEA',
+				'twitter-purple': '#9F7AEA',
+				'twitter-green': '#48BB78',
+				'twitter-orange': '#ED8936',
+				'twitter-gray': {
+					50: '#F7FAFC',
+					100: '#EDF2F7',
+					200: '#E2E8F0',
+					300: '#CBD5E0',
+					400: '#A0AEC0',
+					500: '#718096',
+					600: '#4A5568',
+					700: '#2D3748',
+					800: '#1A202C',
+					900: '#171923',
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -92,5 +114,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [],
 } satisfies Config;

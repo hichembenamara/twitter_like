@@ -27,11 +27,39 @@ export interface Reply {
   createdAt: string;
 }
 
+interface BackendPost {
+  id: number;
+  Titre: string;
+  Contenu: string;
+  imageName?: string;
+  user_created: {
+    id: number;
+    nom: string;
+    username: string;
+    imageName?: string;
+  };
+  likes?: Array<{ id: number }>;
+  comment?: Array<{
+    id: number;
+    Contenu: string;
+    user_created: {
+      id: number;
+      nom: string;
+      username?: string;
+      imageName?: string;
+    };
+  }>;
+  createdAt: string;
+}
+
 interface TweetState {
   tweets: Tweet[];
+  userTweets: Tweet[];
   fetchTweets: () => Promise<void>;
+  fetchUserTweets: (userId?: string) => Promise<Tweet[] | void>;
   addTweet: (content: string, image?: string) => void;
-  likeTweet: (tweetId: string, userId: string) => void;
+  deleteTweet: (tweetId: string) => Promise<void>;
+  likeTweet: (tweetId: string, userId: string) => Promise<void>;
   retweetTweet: (tweetId: string, userId: string) => void;
   replyToTweet: (tweetId: string, content: string) => void;
   bookmarkTweet: (tweetId: string, userId: string) => void;
@@ -63,10 +91,11 @@ const mockTweets: Tweet[] = [
 
 export const useTweetStore = create<TweetState>((set, get) => ({
   tweets: [],
+  userTweets: [],
 
   fetchTweets: async () => {
     try {
-      const response = await fetch('http://localhost:8001/api/posts', {
+      const response = await fetch('/api/posts', {
         credentials: 'include' // Include cookies for session auth
       }); // As defined in PostController
       if (!response.ok) {
@@ -75,17 +104,17 @@ export const useTweetStore = create<TweetState>((set, get) => ({
       const backendPosts = await response.json();
 
       // Map backend Post structure to frontend Tweet structure
-      const formattedTweets: Tweet[] = backendPosts.map((post: any) => {
+      const formattedTweets: Tweet[] = backendPosts.map((post: BackendPost) => {
         // Basic mapping, needs refinement based on actual backend response structure
         // And how User entity (user_created, likes) is serialized
         const author = post.user_created || { id: 'unknown', nom: 'Unknown', imageFile: '' };
-        const likesUserIds = post.likes?.map((user: any) => user.id?.toString()) || [];
-        const repliesFormatted = post.comment?.map((c: any) => ({
+        const likesUserIds = post.likes?.map((user) => user.id?.toString()) || [];
+        const repliesFormatted = post.comment?.map((c) => ({
           id: c.id?.toString(),
           userId: c.user_created?.id?.toString() || 'unknown_reply_user',
-          username: c.user_created?.nom || 'Unknown', // Assuming 'nom' is username/displayName for replies
+          username: c.user_created?.username || c.user_created?.nom || 'Unknown',
           displayName: c.user_created?.nom || 'Unknown',
-          avatar: c.user_created?.imageFile || '', // Or a default avatar
+          avatar: c.user_created?.imageName ? `/images/user/${c.user_created.imageName}` : '/placeholder.svg',
           content: c.Contenu,
           createdAt: c.Creation,
         })) || [];
@@ -94,9 +123,9 @@ export const useTweetStore = create<TweetState>((set, get) => ({
         return {
           id: post.id?.toString(),
           userId: author.id?.toString(),
-          username: author.nom || 'Unknown', // Assuming 'nom' is the username/displayName
+          username: author.username || author.nom || 'Unknown',
           displayName: author.nom || 'Unknown',
-          avatar: author.imageFile || '', // Need to ensure this path is correct or use a default
+          avatar: author.imageName ? `/images/user/${author.imageName}` : '/placeholder.svg',
           content: post.Contenu || post.Titre || '', // Backend has Titre & Contenu
           image: post.Media, // Assuming Media is the image URL
           likes: likesUserIds,
@@ -111,6 +140,64 @@ export const useTweetStore = create<TweetState>((set, get) => ({
     } catch (error) {
       console.error("Error fetching tweets:", error);
       // Optionally set an error state or show a notification
+    }
+  },
+
+  fetchUserTweets: async (userId?: string) => {
+    try {
+      const endpoint = userId ? `/api/users/${userId}/posts` : '/api/me/posts';
+      const response = await fetch(endpoint, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user tweets');
+      }
+      
+      const backendPosts = await response.json();
+      
+      // Map backend Post structure to frontend Tweet structure
+      const formattedTweets: Tweet[] = backendPosts.map((post: BackendPost) => {
+        const author = post.user_created || { id: 'unknown', nom: 'Unknown', imageFile: '' };
+        const likesUserIds = post.likes?.map((user) => user.id?.toString()) || [];
+        const repliesFormatted = post.comment?.map((c) => ({
+          id: c.id?.toString(),
+          userId: c.user_created?.id?.toString() || 'unknown_reply_user',
+          username: c.user_created?.username || c.user_created?.nom || 'Unknown',
+          displayName: c.user_created?.nom || 'Unknown',
+          avatar: c.user_created?.imageName ? `/images/user/${c.user_created.imageName}` : '/placeholder.svg',
+          content: c.Contenu,
+          createdAt: new Date().toISOString(),
+        })) || [];
+
+        return {
+          id: post.id?.toString(),
+          userId: author.id?.toString(),
+          username: author.username || author.nom || 'Unknown',
+          displayName: author.nom || 'Unknown',
+          avatar: author.imageName ? `/images/user/${author.imageName}` : '/placeholder.svg',
+          content: post.Contenu,
+          image: post.imageName ? `/images/post/${post.imageName}` : undefined,
+          likes: likesUserIds,
+          retweets: [],
+          replies: repliesFormatted,
+          bookmarks: [],
+          hashtags: get().extractHashtags(post.Contenu || post.Titre || ''),
+          createdAt: post.createdAt,
+        };
+      });
+      
+      if (userId) {
+        // If fetching for specific user, just return the data without storing
+        // This could be enhanced to store user-specific tweets separately
+        return formattedTweets;
+      } else {
+        // Store current user's tweets
+        set({ userTweets: formattedTweets });
+      }
+    } catch (error) {
+      console.error("Error fetching user tweets:", error);
+      throw error;
     }
   },
 
@@ -129,7 +216,7 @@ export const useTweetStore = create<TweetState>((set, get) => ({
     // const loggedInUser = JSON.parse(userStr); // We have user details, but backend uses authenticated user
 
     try {
-      const response = await fetch('http://localhost:8001/api/posts', {
+      const response = await fetch('/api/posts', {
         method: 'POST',
         credentials: 'include', // Include cookies for session auth
         headers: {
@@ -156,8 +243,8 @@ export const useTweetStore = create<TweetState>((set, get) => ({
 
       // Example of re-using mapping logic (conceptual, adapt fields as needed)
       const author = createdPostFromBackend.user_created || { id: 'unknown', nom: 'Unknown', imageFile: '' };
-      const likesUserIds = createdPostFromBackend.likes?.map((user: any) => user.id?.toString()) || [];
-      const repliesFormatted = createdPostFromBackend.comment?.map((c: any) => ({
+      const likesUserIds = createdPostFromBackend.likes?.map((user: { id: number }) => user.id?.toString()) || [];
+      const repliesFormatted = createdPostFromBackend.comment?.map((c: { id: number; Contenu: string; user_created: { id: number; nom: string; imageFile?: string }; Creation: string }) => ({
         id: c.id?.toString(),
         userId: c.user_created?.id?.toString() || 'unknown_reply_user',
         username: c.user_created?.nom || 'Unknown',
@@ -170,9 +257,9 @@ export const useTweetStore = create<TweetState>((set, get) => ({
       const newTweet: Tweet = {
         id: createdPostFromBackend.id?.toString(),
         userId: author.id?.toString(),
-        username: author.nom || 'Unknown',
+        username: author.username || author.nom || 'Unknown',
         displayName: author.nom || 'Unknown',
-        avatar: author.imageFile || '',
+        avatar: author.imageName ? `/images/user/${author.imageName}` : '/placeholder.svg',
         content: createdPostFromBackend.Contenu || createdPostFromBackend.Titre || '',
         image: createdPostFromBackend.Media,
         likes: likesUserIds,
@@ -184,7 +271,8 @@ export const useTweetStore = create<TweetState>((set, get) => ({
       };
 
       set(state => ({
-        tweets: [newTweet, ...state.tweets] // Add new tweet to the beginning of the list
+        tweets: [newTweet, ...state.tweets], // Add new tweet to the beginning of the list
+        userTweets: [newTweet, ...state.userTweets] // Also add to user tweets
       }));
 
     } catch (error) {
@@ -193,36 +281,78 @@ export const useTweetStore = create<TweetState>((set, get) => ({
     }
   },
 
-  likeTweet: (tweetId: string, userId: string) => {
-    // This is a mock implementation, will be replaced by API call
-    const tweet = get().tweets.find(t => t.id === tweetId);
-    const wasLiked = tweet?.likes.includes(userId);
-    
-    set(state => ({
-      tweets: state.tweets.map(currentTweet => {
-        if (currentTweet.id === tweetId) {
-          const newLikes = currentTweet.likes.includes(userId)
-            ? currentTweet.likes.filter(id => id !== userId)
-            : [...currentTweet.likes, userId];
-          
-          if (!wasLiked && currentTweet.userId !== userId) {
-            const currentUser = JSON.parse(localStorage.getItem('twitter-user') || '{}');
-            useNotificationStore.getState().addNotification({
-              type: 'like',
-              fromUserId: userId,
-              fromUsername: currentUser.username,
-              fromDisplayName: currentUser.displayName,
-              fromAvatar: currentUser.avatar,
-              tweetId: currentTweet.id,
-              tweetContent: currentTweet.content
-            });
+  deleteTweet: async (tweetId: string) => {
+    try {
+      const response = await fetch(`/api/posts/${tweetId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete tweet');
+      }
+
+      // Remove tweet from both tweets and userTweets arrays
+      set(state => ({
+        tweets: state.tweets.filter(tweet => tweet.id !== tweetId),
+        userTweets: state.userTweets.filter(tweet => tweet.id !== tweetId)
+      }));
+
+    } catch (error) {
+      console.error('Error deleting tweet:', error);
+      throw error;
+    }
+  },
+
+  likeTweet: async (tweetId: string, userId: string) => {
+    try {
+      const response = await fetch(`/api/posts/${tweetId}/like`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to like/unlike post');
+      }
+
+      // Update local state optimistically
+      const tweet = get().tweets.find(t => t.id === tweetId);
+      const wasLiked = tweet?.likes.includes(userId);
+      
+      set(state => ({
+        tweets: state.tweets.map(currentTweet => {
+          if (currentTweet.id === tweetId) {
+            const newLikes = currentTweet.likes.includes(userId)
+              ? currentTweet.likes.filter(id => id !== userId)
+              : [...currentTweet.likes, userId];
+            
+            if (!wasLiked && currentTweet.userId !== userId) {
+              const currentUser = JSON.parse(localStorage.getItem('twitter-user') || '{}');
+              useNotificationStore.getState().addNotification({
+                type: 'like',
+                fromUserId: userId,
+                fromUsername: currentUser.username,
+                fromDisplayName: currentUser.displayName,
+                fromAvatar: currentUser.avatar,
+                tweetId: currentTweet.id,
+                tweetContent: currentTweet.content
+              });
+            }
+            return { ...currentTweet, likes: newLikes };
           }
-          return { ...currentTweet, likes: newLikes };
-        }
-        return currentTweet;
-      })
-    }));
-    // TODO: API call to like/unlike
+          return currentTweet;
+        })
+      }));
+    } catch (error) {
+      console.error('Error liking tweet:', error);
+    }
   },
 
   retweetTweet: (tweetId: string, userId: string) => {
@@ -316,6 +446,11 @@ export const useTweetStore = create<TweetState>((set, get) => ({
   },
 
   getUserTweets: (userId: string) => {
+    // First check userTweets for the current user, then fallback to filtered tweets
+    const currentUserTweets = get().userTweets;
+    if (currentUserTweets.length > 0 && currentUserTweets[0]?.userId === userId) {
+      return currentUserTweets;
+    }
     return get().tweets.filter(tweet => tweet.userId === userId);
   },
 

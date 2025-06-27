@@ -26,20 +26,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
       const success = await login(email, password);
       if (success) {
         toast({
-          title: "Welcome back!",
-          description: "You've successfully logged in.",
+          title: "Bon retour !",
+          description: "Vous vous êtes connecté avec succès.",
         });
       } else {
         toast({
-          title: "Login failed",
-          description: "Invalid email or password. Try email: test@example.com, password: password",
+          title: "Échec de la connexion",
+          description: "Email ou mot de passe invalide. Essayez email: test@example.com, mot de passe: password",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "Erreur",
+        description: "Quelque chose s'est mal passé. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
@@ -50,9 +50,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
   return (
     <Card className="w-full max-w-md border-0 shadow-none bg-transparent">
       <CardHeader className="space-y-1 pb-6">
-        <CardTitle className="text-2xl font-bold text-center text-gray-800">Welcome back</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center text-gray-800">Bon retour</CardTitle>
         <CardDescription className="text-center text-gray-600">
-          Sign in to your account to continue
+          Connectez-vous à votre compte pour continuer
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -69,7 +69,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Mot de passe</Label>
             <Input
               id="password"
               type="password"
@@ -84,17 +84,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl" 
             disabled={isLoading}
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? 'Connexion...' : 'Se connecter'}
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
-          Don't have an account?{' '}
+          Vous n'avez pas de compte ?{' '}
           <button
             type="button"
             onClick={onToggleMode}
             className="text-blue-600 hover:text-blue-500 font-medium"
           >
-            Sign up
+            S'inscrire
           </button>
         </div>
         <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 text-sm">

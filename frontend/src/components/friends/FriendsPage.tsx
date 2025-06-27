@@ -1,37 +1,72 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, UserPlus, UserMinus, Search } from 'lucide-react';
-import { useFriendStore } from '@/stores/friendStore';
+import { MessageCircle, UserPlus, UserMinus, Search, Users } from 'lucide-react';
+import { useFriendStore, Friend } from '@/stores/friendStore';
 import { useAuthStore } from '@/stores/authStore';
 import ChatModal from './ChatModal';
 import UserProfileCard from '../profile/UserProfileCard';
 import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const FriendsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
-  const [showProfile, setShowProfile] = useState<string | null>(null);
-  const { friends, addFriend, removeFriend, isFriend } = useFriendStore();
+  const [showProfile, setShowProfile] = useState<Friend | null>(null);
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
+  const { friends, allUsers, addFriend, removeFriend, isFriend, fetchFriends, fetchAllUsers } = useFriendStore();
   const user = useAuthStore(state => state.user);
 
-  const filteredFriends = friends.filter(friend =>
-    friend.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    friend.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchFriends();
+    fetchAllUsers();
+  }, [fetchFriends, fetchAllUsers]);
 
-  const handleAddFriend = (friendId: string) => {
-    if (user) {
-      addFriend(friendId, user.id);
+  const usersToShow = showAllUsers ? allUsers : friends;
+  const filteredUsers = usersToShow
+    .filter(person => user?.id !== person.id) // Don't show current user
+    .filter(person =>
+      person.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.username.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  const handleAddFriend = async (friendId: string) => {
+    if (!user) return;
+    
+    setLoadingActions(prev => new Set(prev).add(friendId));
+    try {
+      await addFriend(friendId);
+    } catch (error) {
+      console.error('Failed to follow user:', error);
+      // You could show a toast notification here
+    } finally {
+      setLoadingActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(friendId);
+        return newSet;
+      });
     }
   };
 
-  const handleRemoveFriend = (friendId: string) => {
-    if (user) {
-      removeFriend(friendId, user.id);
+  const handleRemoveFriend = async (friendId: string) => {
+    if (!user) return;
+    
+    setLoadingActions(prev => new Set(prev).add(friendId));
+    try {
+      await removeFriend(friendId);
+    } catch (error) {
+      console.error('Failed to unfollow user:', error);
+      // You could show a toast notification here
+    } finally {
+      setLoadingActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(friendId);
+        return newSet;
+      });
     }
   };
 
@@ -39,91 +74,161 @@ const FriendsPage: React.FC = () => {
     return isOnline ? 'bg-green-500' : 'bg-gray-400';
   };
 
+  useEffect(() => {
+    fetchFriends();
+    fetchAllUsers();
+  }, [fetchFriends, fetchAllUsers]);
+
   return (
-    <div className="flex-1 max-w-2xl mx-auto">
-      <div className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4 z-10">
-        <h1 className="text-xl font-bold dark:text-white mb-4">Friends</h1>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+    <div className="flex-1 max-w-4xl mx-auto">
+      <div className="sticky top-0 bg-white/90 backdrop-blur-xl border-b border-twitter-gray-200 p-6 z-10 shadow-sm">
+        <div className="bg-gradient-to-r from-twitter-teal to-twitter-green rounded-2xl p-6 mb-6">
+          <div className="flex items-center space-x-4">
+            <Users className="h-8 w-8 text-white" />
+            <div>
+              <h1 className="text-2xl font-black text-white tracking-tight">Amis et Personnes</h1>
+              <p className="text-white/80 mt-1">Connectez-vous avec des personnes formidables</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative mb-4">
+          <Search className="absolute left-4 top-4 h-5 w-5 text-twitter-gray-400" />
           <Input
-            placeholder="Search friends..."
+            placeholder="Rechercher des amis et des personnes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-12 pr-4 py-4 text-lg bg-gradient-to-r from-twitter-gray-100 to-white border-2 border-twitter-gray-300 rounded-2xl focus:border-twitter-teal transition-all duration-300"
           />
+        </div>
+        
+        <div className="flex space-x-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAllUsers(false)}
+            className={
+              !showAllUsers 
+                ? "bg-gradient-to-r from-twitter-teal to-twitter-green text-white shadow-lg px-6 py-3 rounded-2xl font-semibold" 
+                : "text-twitter-gray-600 hover:bg-twitter-gray-100 hover:text-twitter-teal px-6 py-3 rounded-2xl font-semibold"
+            }
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Mes Amis ({friends.length})
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAllUsers(true)}
+            className={
+              showAllUsers 
+                ? "bg-gradient-to-r from-twitter-accent to-twitter-purple text-white shadow-lg px-6 py-3 rounded-2xl font-semibold" 
+                : "text-twitter-gray-600 hover:bg-twitter-gray-100 hover:text-twitter-accent px-6 py-3 rounded-2xl font-semibold"
+            }
+          >
+            <Search className="h-4 w-4 mr-2" />
+            Découvrir des Personnes ({allUsers.filter(u => u.id !== user?.id).length})
+          </Button>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {filteredFriends.map((friend) => (
-          <Card key={friend.id} className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <img
-                    src={friend.avatar}
-                    alt={friend.displayName}
-                    className="w-12 h-12 rounded-full cursor-pointer"
-                    onClick={() => setShowProfile(friend.id)}
-                  />
-                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(friend.isOnline)}`} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <h3 
-                      className="font-semibold dark:text-white cursor-pointer hover:underline"
-                      onClick={() => setShowProfile(friend.id)}
-                    >
-                      {friend.displayName}
-                    </h3>
-                    {friend.isOnline && (
-                      <Badge variant="secondary" className="text-xs">Online</Badge>
-                    )}
+      <div className="p-6 space-y-4">
+        {filteredUsers.length === 0 ? (
+          <div className="bg-gradient-to-br from-white to-twitter-gray-50 rounded-3xl p-12 text-center shadow-lg border border-twitter-gray-200">
+            <div className="bg-gradient-to-r from-twitter-teal to-twitter-green rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <Users className="h-12 w-12 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-twitter-gray-800 mb-3">
+              {showAllUsers ? "Aucun utilisateur trouvé" : "Aucun ami pour le moment"}
+            </h3>
+            <p className="text-twitter-gray-500 text-lg">
+              {showAllUsers 
+                ? "Essayez d'ajuster vos termes de recherche" 
+                : "Découvrez des personnes formidables avec qui vous connecter !"
+              }
+            </p>
+          </div>
+        ) : (
+          filteredUsers.map((person) => (
+            <div key={person.id} className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-twitter-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <img
+                      src={person.avatar}
+                      alt={person.displayName}
+                      className="w-16 h-16 rounded-full cursor-pointer border-3 border-gradient-to-r from-twitter-teal to-twitter-accent object-cover group-hover:scale-105 transition-transform duration-300 shadow-lg"
+                      onClick={() => setShowProfile(person)}
+                    />
+                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white shadow-lg ${getStatusColor(person.isOnline)}`} />
                   </div>
-                  <p className="text-sm text-gray-500">@{friend.username}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{friend.bio}</p>
-                  <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                    <span>{friend.mutualFriends} mutual friends</span>
-                    {!friend.isOnline && (
-                      <span>Last seen {formatDistanceToNow(new Date(friend.lastSeen), { addSuffix: true })}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 
+                        className="font-bold text-xl text-twitter-gray-800 cursor-pointer hover:text-twitter-teal transition-colors"
+                        onClick={() => setShowProfile(person)}
+                      >
+                        {person.displayName}
+                      </h3>
+                      {person.isOnline && (
+                        <Badge className="text-xs bg-gradient-to-r from-twitter-green to-twitter-teal text-white border-0 rounded-full px-3 py-1 font-semibold">
+                          Online
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-twitter-gray-500 font-medium mb-2">@{person.username}</p>
+                    {person.bio && (
+                      <p className="text-twitter-gray-600 leading-relaxed mb-3">{person.bio}</p>
                     )}
+                    <div className="flex items-center space-x-4 text-sm text-twitter-gray-500">
+                      <span className="font-medium">{person.mutualFriends} amis communs</span>
+                      {!person.isOnline && (
+                        <span>Vu pour la dernière fois {formatDistanceToNow(new Date(person.lastSeen), { addSuffix: true, locale: fr })}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedFriend(friend.id)}
-                  className="flex items-center space-x-1"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>Chat</span>
-                </Button>
                 
-                {user && isFriend(friend.id, user.id) ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemoveFriend(friend.id)}
-                    className="text-red-600 hover:bg-red-50"
-                  >
-                    <UserMinus className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={() => handleAddFriend(friend.id)}
-                    className="bg-blue-500 hover:bg-blue-600"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
-                )}
+                <div className="flex space-x-3">
+                  {!showAllUsers && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedFriend(person.id)}
+                      className="border-2 border-twitter-teal text-twitter-teal hover:bg-twitter-teal hover:text-white rounded-full px-6 py-3 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      <span>Discuter</span>
+                    </Button>
+                  )}
+                  
+                  {isFriend(person.id) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveFriend(person.id)}
+                      disabled={loadingActions.has(person.id)}
+                      className="border-2 border-red-400 text-red-500 hover:bg-red-50 rounded-full px-6 py-3 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <UserMinus className="h-4 w-4" />
+                      {loadingActions.has(person.id) && <span className="ml-2">...</span>}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddFriend(person.id)}
+                      disabled={loadingActions.has(person.id)}
+                      className="bg-gradient-to-r from-twitter-teal to-twitter-green text-white hover:from-twitter-green hover:to-twitter-teal rounded-full px-6 py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      {loadingActions.has(person.id) && <span className="ml-2">...</span>}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
-          </Card>
-        ))}
+          ))
+        )}
       </div>
 
       {selectedFriend && (
@@ -135,9 +240,9 @@ const FriendsPage: React.FC = () => {
 
       {showProfile && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-4 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-4 max-w-md w-full mx-4 shadow-xl">
             <UserProfileCard
-              userId={showProfile}
+              user={showProfile}
               onClose={() => setShowProfile(null)}
             />
           </div>

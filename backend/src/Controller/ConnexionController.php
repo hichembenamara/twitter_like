@@ -62,4 +62,11 @@ class ConnexionController extends AbstractController
         // Return user data using serialization groups
         return $this->json($user, 200, [], ['groups' => 'user:read']);
     }
+    
+    #[Route(path: '/api/logout', name: 'api_logout', methods: ['POST'])]
+    public function apiLogout(): JsonResponse
+    {
+        // This should be handled by Symfony security but we provide a response
+        return new JsonResponse(['status' => 'success', 'message' => 'Logout successful']);
+    }
 }

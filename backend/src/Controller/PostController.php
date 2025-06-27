@@ -235,4 +235,53 @@ final class PostController extends AbstractController
             return $this->json(['message' => 'An error occurred while creating the post.'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/api/users/{userId}/posts', name: 'api_user_posts', methods: ['GET'])]
+    public function getUserPosts(int $userId, PostRepository $postRepository, UserRepository $userRepository): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
+        $user = $userRepository->find($userId);
+        if (!$user) {
+            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+        
+        $posts = $postRepository->findBy(['user_created' => $user], ['Creation' => 'DESC']);
+        
+        return $this->json($posts, Response::HTTP_OK, [], ['groups' => 'post:read']);
+    }
+
+    #[Route('/api/me/posts', name: 'api_my_posts', methods: ['GET'])]
+    public function getMyPosts(PostRepository $postRepository): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
+        $currentUser = $this->getUser();
+        $posts = $postRepository->findBy(['user_created' => $currentUser], ['Creation' => 'DESC']);
+        
+        return $this->json($posts, Response::HTTP_OK, [], ['groups' => 'post:read']);
+    }
+
+    #[Route('/api/posts/{id}', name: 'api_post_delete', methods: ['DELETE'])]
+    public function deletePost(int $id, PostRepository $postRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
+        $post = $postRepository->find($id);
+        if (!$post) {
+            return $this->json(['message' => 'Post not found'], Response::HTTP_NOT_FOUND);
+        }
+        
+        $currentUser = $this->getUser();
+        
+        // Check if the current user is the owner of the post
+        if ($post->getUserCreated() !== $currentUser) {
+            return $this->json(['message' => 'You can only delete your own posts'], Response::HTTP_FORBIDDEN);
+        }
+        
+        $entityManager->remove($post);
+        $entityManager->flush();
+        
+        return $this->json(['message' => 'Post deleted successfully'], Response::HTTP_OK);
+    }
 }

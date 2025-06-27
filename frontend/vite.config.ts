@@ -9,8 +9,9 @@ export default defineConfig(({ mode }) => ({
     port: 5173, // ⬅️ même port que dans docker-compose
     proxy: {
       '/api': {
-        target: 'http://backend', // Docker service name for the backend
+        target: mode === 'development' ? 'http://localhost:8001' : 'http://backend', // Use localhost for dev, Docker service name for production
         changeOrigin: true, // Recommended for most cases
+        secure: false, // Allow self-signed certificates in dev
         rewrite: (path) => path.replace(/^\/api/, '/api'), // Ensure /api prefix is kept if backend expects it under /api
         // If your Symfony backend doesn't have /api prefix for its routes (e.g. /login_check instead of /api/login_check)
         // you might want to rewrite it like this:

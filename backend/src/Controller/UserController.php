@@ -37,6 +37,79 @@ final class UserController extends AbstractController
 
         return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
+
+    #[Route('/api/users', name: 'api_users_list', methods: ['GET'])]
+    public function getAllUsers(UserRepository $userRepository): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
+        $users = $userRepository->findAll();
+        
+        return $this->json($users, Response::HTTP_OK, [], ['groups' => 'user:read']);
+    }
+
+    #[Route('/api/users/{id}/follow', name: 'api_user_follow', methods: ['POST'])]
+    public function followUser(int $id, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
+        $currentUser = $this->getUser();
+        $userToFollow = $userRepository->find($id);
+        
+        if (!$userToFollow) {
+            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+        
+        if ($currentUser === $userToFollow) {
+            return $this->json(['message' => 'Cannot follow yourself'], Response::HTTP_BAD_REQUEST);
+        }
+        
+        // Add to following list
+        if (!$currentUser->getFollowing()->contains($userToFollow)) {
+            $currentUser->addFollowing($userToFollow);
+            $entityManager->flush();
+        }
+        
+        return $this->json(['message' => 'User followed successfully'], Response::HTTP_OK);
+    }
+
+    #[Route('/api/users/{id}/unfollow', name: 'api_user_unfollow', methods: ['POST'])]
+    public function unfollowUser(int $id, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
+        $currentUser = $this->getUser();
+        $userToUnfollow = $userRepository->find($id);
+        
+        if (!$userToUnfollow) {
+            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+        
+        // Remove from following list
+        if ($currentUser->getFollowing()->contains($userToUnfollow)) {
+            $currentUser->removeFollowing($userToUnfollow);
+            $entityManager->flush();
+        }
+        
+        return $this->json(['message' => 'User unfollowed successfully'], Response::HTTP_OK);
+    }
+
+    #[Route('/api/friends', name: 'api_friends_list', methods: ['GET'])]
+    public function getFriends(): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        
+        $currentUser = $this->getUser();
+        $friends = $currentUser->getFollowing();
+        
+        return $this->json($friends, Response::HTTP_OK, [], ['groups' => 'user:read']);
+    }
+
+    #[Route('/api/logout', name: 'api_logout', methods: ['POST'])]
+    public function apiLogout(): JsonResponse
+    {
+        return $this->json(['message' => 'Logged out successfully'], Response::HTTP_OK);
+    }
     #[Route('/profil/my', name: 'app_user')]
     public function index(Security $security): Response
     {

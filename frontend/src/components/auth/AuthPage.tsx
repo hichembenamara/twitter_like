@@ -17,9 +17,9 @@ const AuthPage: React.FC = () => {
             </div>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Twitter Clone
+            🐦 Twitter-A
           </h1>
-          <p className="text-gray-600 mt-3 text-lg">Connect with friends and the world around you</p>
+          <p className="text-gray-600 mt-3 text-lg">Connectez-vous avec vos amis et le monde qui vous entoure</p>
         </div>
         
         <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20">

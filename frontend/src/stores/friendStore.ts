@@ -21,13 +21,25 @@ export interface ChatMessage {
   isRead: boolean;
 }
 
+interface BackendUser {
+  id: number;
+  username?: string;
+  nom: string;
+  imageName?: string;
+  bio?: string;
+  lastSeen?: string;
+}
+
 interface FriendState {
   friends: Friend[];
   chatMessages: ChatMessage[];
   friendRequests: string[];
-  addFriend: (friendId: string, currentUserId: string) => void;
-  removeFriend: (friendId: string, currentUserId: string) => void;
-  isFriend: (friendId: string, currentUserId: string) => boolean;
+  allUsers: Friend[];
+  fetchAllUsers: () => Promise<void>;
+  fetchFriends: () => Promise<void>;
+  addFriend: (friendId: string, currentUserId?: string) => Promise<void>;
+  removeFriend: (friendId: string, currentUserId?: string) => Promise<void>;
+  isFriend: (friendId: string, currentUserId?: string) => boolean;
   sendMessage: (receiverId: string, content: string) => void;
   getMessagesWithFriend: (friendId: string, currentUserId: string) => ChatMessage[];
   getFriendById: (friendId: string) => Friend | null;
@@ -113,26 +125,129 @@ const mockChatMessages: ChatMessage[] = [
 ];
 
 export const useFriendStore = create<FriendState>((set, get) => ({
-  friends: mockFriends,
+  friends: [],
   chatMessages: mockChatMessages,
   friendRequests: [],
+  allUsers: [],
+
+  fetchAllUsers: async () => {
+    try {
+      const response = await fetch('/api/users', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const users = await response.json();
+      
+      const formattedUsers: Friend[] = users.map((user: BackendUser) => ({
+        id: user.id?.toString(),
+        username: user.username || user.nom || 'Unknown',
+        displayName: user.nom || 'Unknown',
+        avatar: user.imageName ? `/images/user/${user.imageName}` : '/placeholder.svg',
+        bio: user.bio || '',
+        isOnline: false, // Backend doesn't track this yet
+        lastSeen: user.lastSeen || new Date().toISOString(),
+        mutualFriends: 0 // Backend doesn't track this yet
+      }));
+      
+      set({ allUsers: formattedUsers });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  },
+
+  fetchFriends: async () => {
+    try {
+      const response = await fetch('/api/friends', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch friends');
+      }
+      const friends = await response.json();
+      
+      const formattedFriends: Friend[] = friends.map((friend: BackendUser) => ({
+        id: friend.id?.toString(),
+        username: friend.username || friend.nom || 'Unknown',
+        displayName: friend.nom || 'Unknown',
+        avatar: friend.imageName ? `/images/user/${friend.imageName}` : '/placeholder.svg',
+        bio: friend.bio || '',
+        isOnline: false,
+        lastSeen: friend.lastSeen || new Date().toISOString(),
+        mutualFriends: 0
+      }));
+      
+      set({ friends: formattedFriends });
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+    }
+  },
 
   getFriendById: (friendId: string) => {
     return get().friends.find(friend => friend.id === friendId) || null;
   },
 
-  addFriend: (friendId: string, currentUserId: string) => {
-    // In a real app, this would send a friend request and update when accepted
-    console.log(`${currentUserId} added ${friendId} as friend`);
+  addFriend: async (friendId: string, currentUserId?: string) => {
+    try {
+      const response = await fetch(`/api/users/${friendId}/follow`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to follow user');
+      }
+
+      // Add friend to local state optimistically
+      const user = get().allUsers.find(u => u.id === friendId);
+      if (user) {
+        set(state => ({
+          friends: [...state.friends, user]
+        }));
+      }
+
+      // Refresh friends list from backend
+      get().fetchFriends();
+    } catch (error) {
+      console.error('Error following user:', error);
+      throw error;
+    }
   },
 
-  removeFriend: (friendId: string, currentUserId: string) => {
-    // Remove friend relationship
-    console.log(`${currentUserId} removed ${friendId} as friend`);
+  removeFriend: async (friendId: string, currentUserId?: string) => {
+    try {
+      const response = await fetch(`/api/users/${friendId}/unfollow`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to unfollow user');
+      }
+
+      // Remove friend from local state
+      set(state => ({
+        friends: state.friends.filter(friend => friend.id !== friendId)
+      }));
+
+      // Refresh friends list from backend
+      get().fetchFriends();
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      throw error;
+    }
   },
 
-  isFriend: (friendId: string, currentUserId: string) => {
-    // For demo purposes, consider all mock friends as friends
+  isFriend: (friendId: string, currentUserId?: string) => {
     return get().friends.some(friend => friend.id === friendId);
   },
 

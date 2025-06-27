@@ -18,6 +18,19 @@ class RegistrationFormType extends AbstractType
     {
         $builder
             ->add('email')
+            ->add('username', null, [
+                'constraints' => [
+                    new NotBlank([
+                        'message' => 'Veuillez entrer un nom d\'utilisateur',
+                    ]),
+                    new Length([
+                        'min' => 3,
+                        'minMessage' => 'Le nom d\'utilisateur doit contenir au moins {{ limit }} caractères.',
+                        'max' => 50,
+                        'maxMessage' => 'Le nom d\'utilisateur ne peut pas dépasser {{ limit }} caractères.',
+                    ]),
+                ],
+            ])
             ->add('plainPassword', PasswordType::class, [
                 // instead of being set onto the object directly,
                 // this is read and encoded in the controller

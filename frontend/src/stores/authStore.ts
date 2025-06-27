@@ -24,8 +24,8 @@ interface AuthState {
     username: string;
     password: string;
     displayName: string;
-  }) => Promise<boolean>;
-  logout: () => void;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
 }
 
@@ -67,8 +67,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email: string, password: string) => {
     try {
-      // Use full backend URL to avoid CORS issues
-      const response = await fetch('http://localhost:8001/api/login_check', {
+      // Use relative URL to leverage Vite proxy
+      const response = await fetch('/api/login_check', {
         method: 'POST',
         credentials: 'include', // Include cookies for session auth
         headers: {
@@ -108,7 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // const responseData = await response.json(); // This might fail if response is empty
 
       // After successful login (cookie is set), fetch user data from /api/me
-      const meResponse = await fetch('http://localhost:8001/api/me', {
+      const meResponse = await fetch('/api/me', {
         credentials: 'include' // Include cookies for session auth
       });
       if (!meResponse.ok) {
@@ -132,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           displayName: userData.nom, // Map nom to displayName
           bio: userData.bio || '',
           // Use imageName from backend (which should be just the filename) and construct path
-          avatar: userData.imageName ? `http://localhost:8001/images/user/${userData.imageName}` : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
+          avatar: userData.imageName ? `/images/user/${userData.imageName}` : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
           banner: userData.banner || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=200&fit=crop', // Provide default
           followers: userData.followers || [], // Assuming these fields might not be in user:read yet
           following: userData.following || [],
@@ -164,7 +164,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     displayName: string;
   }) => {
     try {
-      const response = await fetch('http://localhost:8001/api/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         credentials: 'include', // Include cookies for session auth
         headers: {
@@ -179,10 +179,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (!response.ok) {
-        // const errorData = await response.json().catch(() => null);
-        // console.error('Signup failed:', response.status, errorData);
-        // Optionally, extract error messages from errorData to show to user
-        return false;
+        const errorData = await response.json().catch(() => null);
+        console.error('Signup failed:', response.status, errorData);
+        
+        if (errorData?.message) {
+          throw new Error(errorData.message);
+        }
+        throw new Error('Signup failed');
       }
 
       const newUserData = await response.json(); // Backend should return the created user object
@@ -207,21 +210,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         };
         set({ user: mappedUser, isAuthenticated: true });
         localStorage.setItem('twitter-user', JSON.stringify(mappedUser));
-        return true;
       } else {
         // Should not happen if backend returns user on 201 Created
         console.error('Signup successful but no or invalid user data returned from /api/register');
-        return false;
+        throw new Error('Invalid user data returned');
       }
     } catch (error) {
       console.error('Signup API call error:', error);
-      return false;
+      throw error;
     }
   },
 
-  logout: () => {
-    set({ user: null, isAuthenticated: false });
-    localStorage.removeItem('twitter-user');
+  logout: async () => {
+    try {
+      // Call backend logout endpoint
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+    } finally {
+      // Clear local state regardless of API call result
+      set({ user: null, isAuthenticated: false });
+      localStorage.removeItem('twitter-user');
+    }
   },
 
   updateProfile: (updates) => {
