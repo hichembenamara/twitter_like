@@ -16,7 +16,7 @@ const FriendsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState<Friend | null>(null);
-  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [showAllUsers, setShowAllUsers] = useState(true); // Always show all users for "qui suivre"
   const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
   const { friends, allUsers, addFriend, removeFriend, isFriend, fetchFriends, fetchAllUsers } = useFriendStore();
   const user = useAuthStore(state => state.user);
@@ -86,8 +86,8 @@ const FriendsPage: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Users className="h-8 w-8 text-white" />
             <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">Amis et Personnes</h1>
-              <p className="text-white/80 mt-1">Connectez-vous avec des personnes formidables</p>
+              <h1 className="text-2xl font-black text-white tracking-tight">Qui suivre</h1>
+              <p className="text-white/80 mt-1">Découvrez et suivez de nouveaux utilisateurs</p>
             </div>
           </div>
         </div>
@@ -95,40 +95,17 @@ const FriendsPage: React.FC = () => {
         <div className="relative mb-4">
           <Search className="absolute left-4 top-4 h-5 w-5 text-twitter-gray-400" />
           <Input
-            placeholder="Rechercher des amis et des personnes..."
+            placeholder="Rechercher des utilisateurs..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-12 pr-4 py-4 text-lg bg-gradient-to-r from-twitter-gray-100 to-white border-2 border-twitter-gray-300 rounded-2xl focus:border-twitter-teal transition-all duration-300"
           />
         </div>
         
-        <div className="flex space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAllUsers(false)}
-            className={
-              !showAllUsers 
-                ? "bg-gradient-to-r from-twitter-teal to-twitter-green text-white shadow-lg px-6 py-3 rounded-2xl font-semibold" 
-                : "text-twitter-gray-600 hover:bg-twitter-gray-100 hover:text-twitter-teal px-6 py-3 rounded-2xl font-semibold"
-            }
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Mes Amis ({friends.length})
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAllUsers(true)}
-            className={
-              showAllUsers 
-                ? "bg-gradient-to-r from-twitter-accent to-twitter-purple text-white shadow-lg px-6 py-3 rounded-2xl font-semibold" 
-                : "text-twitter-gray-600 hover:bg-twitter-gray-100 hover:text-twitter-accent px-6 py-3 rounded-2xl font-semibold"
-            }
-          >
-            <Search className="h-4 w-4 mr-2" />
-            Découvrir des Personnes ({allUsers.filter(u => u.id !== user?.id).length})
-          </Button>
+        <div className="text-center">
+          <p className="text-twitter-gray-600 font-medium">
+            {allUsers.filter(u => u.id !== user?.id).length} utilisateurs disponibles
+          </p>
         </div>
       </div>
 
@@ -139,13 +116,10 @@ const FriendsPage: React.FC = () => {
               <Users className="h-12 w-12 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-twitter-gray-800 mb-3">
-              {showAllUsers ? "Aucun utilisateur trouvé" : "Aucun ami pour le moment"}
+              Aucun utilisateur trouvé
             </h3>
             <p className="text-twitter-gray-500 text-lg">
-              {showAllUsers 
-                ? "Essayez d'ajuster vos termes de recherche" 
-                : "Découvrez des personnes formidables avec qui vous connecter !"
-              }
+              Essayez d'ajuster vos termes de recherche ou créez un autre compte pour tester
             </p>
           </div>
         ) : (
@@ -190,18 +164,6 @@ const FriendsPage: React.FC = () => {
                 </div>
                 
                 <div className="flex space-x-3">
-                  {!showAllUsers && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedFriend(person.id)}
-                      className="border-2 border-twitter-teal text-twitter-teal hover:bg-twitter-teal hover:text-white rounded-full px-6 py-3 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      <span>Discuter</span>
-                    </Button>
-                  )}
-                  
                   {isFriend(person.id) ? (
                     <Button
                       variant="outline"

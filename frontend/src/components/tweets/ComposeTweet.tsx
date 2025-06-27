@@ -39,10 +39,17 @@ const ComposeTweet: React.FC = () => {
     e.preventDefault();
     if (!content.trim() || !user) return;
 
+    console.log('🐦 Posting tweet as user:', {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      content: content.trim()
+    });
+
     setIsPosting(true);
     
     try {
-      addTweet(content.trim(), selectedImage || undefined);
+      await addTweet(content.trim(), selectedImage || undefined);
       setContent('');
       setSelectedImage(null);
       if (fileInputRef.current) {

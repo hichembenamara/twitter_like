@@ -14,6 +14,7 @@ import { useTweetStore } from '@/stores/tweetStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserStore } from '@/stores/userStore';
 import { useFriendStore } from '@/stores/friendStore';
+import UserProfileCard from '../profile/UserProfileCard';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,7 @@ interface TweetCardProps {
 const TweetCard: React.FC<TweetCardProps> = ({ tweet }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState('');
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const { likeTweet, retweetTweet, replyToTweet, bookmarkTweet, deleteTweet } = useTweetStore();
   const { blockUser, reportTweet } = useUserStore();
   const { addFriend, removeFriend, isFriend } = useFriendStore();
@@ -114,7 +116,8 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet }) => {
           <img
             src={tweet.avatar}
             alt={tweet.displayName}
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gradient-to-r from-twitter-teal to-twitter-accent object-cover group-hover:scale-105 transition-transform duration-300 shadow-lg"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gradient-to-r from-twitter-teal to-twitter-accent object-cover group-hover:scale-105 transition-transform duration-300 shadow-lg cursor-pointer"
+            onClick={() => setShowUserProfile(true)}
           />
           {tweet.isVerified && (
             <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-twitter-accent to-twitter-purple rounded-full flex items-center justify-center shadow-lg">
@@ -125,8 +128,18 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap">
-              <h3 className="font-bold text-twitter-gray-800 text-sm sm:text-lg group-hover:text-twitter-accent transition-colors">{tweet.displayName}</h3>
-              <span className="text-twitter-gray-500 text-sm hidden sm:inline font-medium">@{tweet.username}</span>
+              <h3 
+                className="font-bold text-twitter-gray-800 text-sm sm:text-lg group-hover:text-twitter-accent transition-colors cursor-pointer hover:underline"
+                onClick={() => setShowUserProfile(true)}
+              >
+                {tweet.displayName}
+              </h3>
+              <span 
+                className="text-twitter-gray-500 text-sm hidden sm:inline font-medium cursor-pointer hover:text-twitter-accent hover:underline"
+                onClick={() => setShowUserProfile(true)}
+              >
+                @{tweet.username}
+              </span>
               <span className="text-twitter-gray-400 hidden sm:inline">•</span>
               <span className="text-twitter-gray-500 text-xs sm:text-sm font-medium">
                 {(() => {
@@ -343,6 +356,24 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet }) => {
           )}
         </div>
       </div>
+      
+      {/* User Profile Modal */}
+      {showUserProfile && (
+        <UserProfileCard
+          user={{
+            id: tweet.userId,
+            username: tweet.username,
+            displayName: tweet.displayName,
+            avatar: tweet.avatar,
+            bio: '',
+            isOnline: false,
+            lastSeen: new Date().toISOString(),
+            mutualFriends: 0,
+            banner: ''
+          }}
+          onClose={() => setShowUserProfile(false)}
+        />
+      )}
     </article>
   );
 };

@@ -14,11 +14,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
 
+  const handleLogout = async () => {
+    await logout();
+  };
+
   const menuItems = [
     { key: 'home', label: 'Accueil', icon: Home },
     { key: 'search', label: 'Explorer', icon: Search },
     { key: 'notifications', label: 'Notifications', icon: Bell },
-    { key: 'friends', label: 'Amis', icon: Users },
+    { key: 'friends', label: 'Qui suivre', icon: Users },
     { key: 'likes', label: 'Favoris', icon: Heart },
     { key: 'profile', label: 'Profil', icon: User },
   ];
@@ -88,10 +92,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
               </div>
               <div className="flex-1 min-w-0 hidden sm:block">
                 <p className="font-bold text-twitter-gray-800 truncate group-hover:text-twitter-accent transition-colors">{user.displayName}</p>
-                <p className="text-sm text-twitter-gray-500 truncate">@{user.username}</p>
+                <p className="text-sm text-twitter-gray-500 truncate">@{user.username} (ID: {user.id})</p>
               </div>
-              <div className="hidden sm:block">
+              <div className="hidden sm:flex items-center space-x-2">
                 <div className="w-2 h-2 bg-twitter-accent rounded-full animate-pulse"></div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-twitter-gray-500 hover:text-red-500 p-1"
+                  title="Se déconnecter"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>

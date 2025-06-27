@@ -135,8 +135,9 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       const response = await fetch('/api/users', {
         credentials: 'include'
       });
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
       }
       const users = await response.json();
       
@@ -197,10 +198,10 @@ export const useFriendStore = create<FriendState>((set, get) => ({
           'Content-Type': 'application/json',
         },
       });
-
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to follow user');
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `Failed to follow user: ${response.status} ${response.statusText}`);
       }
 
       // Add friend to local state optimistically

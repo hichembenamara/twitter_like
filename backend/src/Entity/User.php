@@ -98,14 +98,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'followers')]
     #[ORM\JoinTable(name: 'user_following')]
-    #[Groups(['user:read'])]
     private Collection $following;
 
     /**
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'following')]
-    #[Groups(['user:read'])]
     private Collection $followers;
 
     public function __construct()
