@@ -49,4 +49,17 @@ class ConnexionController extends AbstractController
         // This route should never be reached as it's handled by security
         throw new \Exception('This should not be reached');
     }
+    
+    #[Route(path: '/api/me', name: 'api_me', methods: ['GET'])]
+    public function apiMe(): JsonResponse
+    {
+        $user = $this->getUser();
+        
+        if (!$user) {
+            return new JsonResponse(['message' => 'User not authenticated'], 401);
+        }
+        
+        // Return user data using serialization groups
+        return $this->json($user, 200, [], ['groups' => 'user:read']);
+    }
 }
