@@ -1,35 +1,104 @@
-# Optimized for Development with Vite Dev Server & Caching
-FROM node:20 
+# Multi-stage build for optimized development and production
+FROM node:20-alpine AS base
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
-RUN corepack enable
+# Install pnpm for better performance (optional - you can use npm)
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy package definition files first for better caching
+# Copy package files for better layer caching
 COPY package*.json ./
-# If you use pnpm, copy pnpm-lock.yaml. If yarn, yarn.lock. If bun, bun.lockb.
-# COPY pnpm-lock.yaml ./
-# COPY bun.lockb ./
+COPY bun.lockb* ./
 
-# Install dependencies using the appropriate package manager
-# Ensure this matches what generated your lockfile (npm, yarn, pnpm, bun)
-# Your original file used npm install --legacy-peer-deps
-RUN npm install --legacy-peer-deps
+# Install dependencies
+RUN npm ci --legacy-peer-deps
 
-# Copy the rest of your application code
-# In a development setup with docker-compose volumes, this copy is primarily for 
-# building the initial image or for cases where volumes are not used.
-# The live code will come from the volume mount.
+#################################
+# Development stage
+#################################
+FROM base AS development
+
+# Copy source code
 COPY . .
 
-# EXPOSE 5173 (this is the port Vite runs on by default with --port 5173)
-# This is good practice, though docker-compose's `ports` mapping is what makes it accessible.
+# Create user for security
+RUN addgroup -g 1001 -S nodejs \
+    && adduser -S nextjs -u 1001
+
+# Change ownership of the app directory
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Expose port
 EXPOSE 5173
 
-# The CMD can be defined in docker-compose.yml, which often overrides this.
-# However, having a default CMD here is good practice.
-# Your docker-compose uses: npm run dev -- --host --port 5173
-CMD ["npm", "run", "dev", "--", "--host", "--port", "5173"]
+# Development command
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+#################################
+# Production build stage
+#################################
+FROM base AS build
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+#################################
+# Production stage
+#################################
+FROM nginx:alpine AS production
+
+# Copy built assets from build stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy custom nginx configuration
+COPY <<EOF /etc/nginx/conf.d/default.conf
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html index.htm;
+
+    # Enable gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Handle React Router (SPA)
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    # API proxy to backend
+    location /api/ {
+        proxy_pass http://backend:80/api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With";
+        add_header Access-Control-Allow-Credentials true;
+        
+        # Handle preflight requests
+        if (\$request_method = OPTIONS) {
+            return 200;
+        }
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

@@ -22,8 +22,8 @@ security:
                 enable_csrf: true
             json_login: # API login
                 check_path: /api/login_check # The path the frontend will POST to
-                # success_handler: lexik_jwt_authentication.handler.authentication_success # Example if using JWT
-                # failure_handler: lexik_jwt_authentication.handler.authentication_failure # Example if using JWT
+                success_handler: api_login_success_handler
+                failure_handler: api_login_failure_handler
             logout:
                 path: app_logout
                 # where to redirect after logout

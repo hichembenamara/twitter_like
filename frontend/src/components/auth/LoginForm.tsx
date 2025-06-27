@@ -32,7 +32,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
       } else {
         toast({
           title: "Login failed",
-          description: "Invalid email or password. Try email: john@example.com, password: password",
+          description: "Invalid email or password. Try email: test@example.com, password: password",
           variant: "destructive",
         });
       }
@@ -48,10 +48,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-        <CardDescription className="text-center">
+    <Card className="w-full max-w-md border-0 shadow-none bg-transparent">
+      <CardHeader className="space-y-1 pb-6">
+        <CardTitle className="text-2xl font-bold text-center text-gray-800">Welcome back</CardTitle>
+        <CardDescription className="text-center text-gray-600">
           Sign in to your account to continue
         </CardDescription>
       </CardHeader>
@@ -62,7 +62,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             <Input
               id="email"
               type="email"
-              placeholder="john@example.com"
+              placeholder="test@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -79,7 +79,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl" 
+            disabled={isLoading}
+          >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
@@ -93,10 +97,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             Sign up
           </button>
         </div>
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-          <strong>Demo credentials:</strong><br />
-          Email: john@example.com<br />
-          Password: password
+        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 text-sm">
+          <div className="flex items-center mb-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+            <strong className="text-blue-800">Demo credentials:</strong>
+          </div>
+          <div className="ml-4 text-gray-700 space-y-1">
+            <div>📧 Email: <code className="bg-white px-2 py-1 rounded text-blue-600">test@example.com</code></div>
+            <div>🔑 Password: <code className="bg-white px-2 py-1 rounded text-blue-600">password</code></div>
+          </div>
         </div>
       </CardContent>
     </Card>

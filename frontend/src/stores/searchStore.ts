@@ -31,42 +31,44 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   searchTweets: (query: string) => {
     set({ isSearching: true });
     // Import tweets from tweetStore
-    const { useTweetStore } = require('./tweetStore');
-    const allTweets = useTweetStore.getState().tweets;
+    import('./tweetStore').then(({ useTweetStore }) => {
+      const allTweets = useTweetStore.getState().tweets;
     
-    const filteredTweets = allTweets.filter(tweet => 
-      tweet.content.toLowerCase().includes(query.toLowerCase()) ||
-      tweet.username.toLowerCase().includes(query.toLowerCase()) ||
-      tweet.displayName.toLowerCase().includes(query.toLowerCase())
-    );
+      const filteredTweets = allTweets.filter(tweet => 
+        tweet.content.toLowerCase().includes(query.toLowerCase()) ||
+        tweet.username.toLowerCase().includes(query.toLowerCase()) ||
+        tweet.displayName.toLowerCase().includes(query.toLowerCase())
+      );
 
-    set(state => ({
-      searchResults: {
-        ...state.searchResults,
-        tweets: filteredTweets
-      },
-      isSearching: false
-    }));
+      set(state => ({
+        searchResults: {
+          ...state.searchResults,
+          tweets: filteredTweets
+        },
+        isSearching: false
+      }));
+    });
   },
 
   searchUsers: (query: string) => {
     set({ isSearching: true });
     // Import users from userStore
-    const { useUserStore } = require('./userStore');
-    const allUsers = useUserStore.getState().users;
+    import('./userStore').then(({ useUserStore }) => {
+      const allUsers = useUserStore.getState().users;
     
-    const filteredUsers = allUsers.filter(user => 
-      user.username.toLowerCase().includes(query.toLowerCase()) ||
-      user.displayName.toLowerCase().includes(query.toLowerCase())
-    );
+      const filteredUsers = allUsers.filter(user => 
+        user.username.toLowerCase().includes(query.toLowerCase()) ||
+        user.displayName.toLowerCase().includes(query.toLowerCase())
+      );
 
-    set(state => ({
-      searchResults: {
-        ...state.searchResults,
-        users: filteredUsers
-      },
-      isSearching: false
-    }));
+      set(state => ({
+        searchResults: {
+          ...state.searchResults,
+          users: filteredUsers
+        },
+        isSearching: false
+      }));
+    });
   },
 
   clearSearch: () => {

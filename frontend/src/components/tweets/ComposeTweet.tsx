@@ -68,14 +68,14 @@ const ComposeTweet: React.FC = () => {
   if (!user) return null;
 
   return (
-    <Card className="p-4 mb-6">
+    <div className="p-4 border-b border-gray-200">
       <form onSubmit={handleSubmit}>
         <div className="flex space-x-3">
           <div className="relative">
             <img
               src={user.avatar}
               alt={user.displayName}
-              className="w-12 h-12 rounded-full"
+              className="w-12 h-12 rounded-full border-2 border-gray-100"
             />
             {user.isVerified && (
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
@@ -88,7 +88,7 @@ const ComposeTweet: React.FC = () => {
               placeholder="What's happening?"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-[120px] text-lg border-none resize-none focus:ring-0 p-0"
+              className="min-h-[120px] text-xl border-none resize-none focus:ring-0 p-0 placeholder:text-gray-500"
               maxLength={280}
             />
             
@@ -140,7 +140,7 @@ const ComposeTweet: React.FC = () => {
               <Button
                 type="submit"
                 disabled={!content.trim() || remainingChars < 0 || isPosting}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6"
+                className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-semibold px-6 py-2 rounded-full transition-colors"
               >
                 {isPosting ? 'Posting...' : 'Tweet'}
               </Button>
@@ -148,7 +148,7 @@ const ComposeTweet: React.FC = () => {
           </div>
         </div>
       </form>
-    </Card>
+    </div>
   );
 };
 

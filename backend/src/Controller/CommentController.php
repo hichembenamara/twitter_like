@@ -25,7 +25,7 @@ final class CommentController extends AbstractController
     }
 
     #[Route('/comment/new', name: 'comment_new')]
-    public function new(Comment $comment, EntityManagerInterface $entityManager, Request $request): Response
+    public function new(EntityManagerInterface $entityManager, Request $request): Response
     {
         return $this->redirectToRoute('app_feed');
     }

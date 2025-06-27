@@ -85,13 +85,13 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet }) => {
   };
 
   return (
-    <Card className="p-4 mb-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+    <article className="p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
       <div className="flex space-x-3">
         <div className="relative">
           <img
             src={tweet.avatar}
             alt={tweet.displayName}
-            className="w-12 h-12 rounded-full"
+            className="w-12 h-12 rounded-full border-2 border-gray-100"
           />
           {tweetUser?.isVerified && (
             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">

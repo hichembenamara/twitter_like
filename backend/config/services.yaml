@@ -22,3 +22,10 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    
+    # API Authentication Handlers
+    api_login_success_handler:
+        class: App\Security\ApiAuthenticationHandler
+        
+    api_login_failure_handler:
+        class: App\Security\ApiAuthenticationHandler

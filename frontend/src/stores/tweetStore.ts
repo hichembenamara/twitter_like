@@ -66,7 +66,9 @@ export const useTweetStore = create<TweetState>((set, get) => ({
 
   fetchTweets: async () => {
     try {
-      const response = await fetch('/api/posts'); // As defined in PostController
+      const response = await fetch('http://localhost:8001/api/posts', {
+        credentials: 'include' // Include cookies for session auth
+      }); // As defined in PostController
       if (!response.ok) {
         throw new Error('Failed to fetch tweets');
       }
@@ -127,8 +129,9 @@ export const useTweetStore = create<TweetState>((set, get) => ({
     // const loggedInUser = JSON.parse(userStr); // We have user details, but backend uses authenticated user
 
     try {
-      const response = await fetch('/api/posts', {
+      const response = await fetch('http://localhost:8001/api/posts', {
         method: 'POST',
+        credentials: 'include', // Include cookies for session auth
         headers: {
           'Content-Type': 'application/json',
           // Authorization header might be needed if not using session cookies,

@@ -67,9 +67,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email: string, password: string) => {
     try {
-      // Use relative path for Vite proxy, matching the json_login check_path
-      const response = await fetch('/api/login_check', {
+      // Use full backend URL to avoid CORS issues
+      const response = await fetch('http://localhost:8001/api/login_check', {
         method: 'POST',
+        credentials: 'include', // Include cookies for session auth
         headers: {
           'Content-Type': 'application/json',
         },
@@ -107,7 +108,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // const responseData = await response.json(); // This might fail if response is empty
 
       // After successful login (cookie is set), fetch user data from /api/me
-      const meResponse = await fetch('/api/me');
+      const meResponse = await fetch('http://localhost:8001/api/me', {
+        credentials: 'include' // Include cookies for session auth
+      });
       if (!meResponse.ok) {
         // Handle error if /api/me fails (e.g., user somehow not authenticated)
         set({ isAuthenticated: false, user: null }); // Ensure clean state
@@ -117,6 +120,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const userData = await meResponse.json();
+      console.log('User data from /api/me:', userData);
       if (userData && userData.id) {
         // The backend User entity has 'nom' for display name and 'imageFile' for avatar path.
         // The frontend User interface has 'displayName' and 'avatar'.
@@ -128,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           displayName: userData.nom, // Map nom to displayName
           bio: userData.bio || '',
           // Use imageName from backend (which should be just the filename) and construct path
-          avatar: userData.imageName ? `/images/user/${userData.imageName}` : '/placeholder.svg',
+          avatar: userData.imageName ? `http://localhost:8001/images/user/${userData.imageName}` : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
           banner: userData.banner || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=200&fit=crop', // Provide default
           followers: userData.followers || [], // Assuming these fields might not be in user:read yet
           following: userData.following || [],
@@ -136,6 +140,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isVerified: userData.isVerified || false,
           isPrivate: userData.isPrivate || false,
         };
+        console.log('Mapped user for frontend:', mappedUser);
         set({ user: mappedUser, isAuthenticated: true });
         localStorage.setItem('twitter-user', JSON.stringify(mappedUser));
         return true;
@@ -159,8 +164,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     displayName: string;
   }) => {
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch('http://localhost:8001/api/register', {
         method: 'POST',
+        credentials: 'include', // Include cookies for session auth
         headers: {
           'Content-Type': 'application/json',
         },
