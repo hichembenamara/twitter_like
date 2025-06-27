@@ -180,12 +180,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        console.error('Signup failed:', response.status, errorData);
+        console.error('Signup failed:', response.status, response.statusText, errorData);
         
         if (errorData?.message) {
           throw new Error(errorData.message);
         }
-        throw new Error('Signup failed');
+        if (errorData?.errors) {
+          const errorMessages = Object.values(errorData.errors).join(', ');
+          throw new Error(errorMessages);
+        }
+        throw new Error(`Signup failed: ${response.status} ${response.statusText}`);
       }
 
       const newUserData = await response.json(); // Backend should return the created user object

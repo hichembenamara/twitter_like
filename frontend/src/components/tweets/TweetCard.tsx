@@ -33,7 +33,19 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet }) => {
   const isRetweeted = user ? tweet.retweets.includes(user.id) : false;
   const isBookmarked = user ? tweet.bookmarks.includes(user.id) : false;
   const isUsersFriend = user ? isFriend(tweet.userId) : false;
-  const isOwnTweet = user?.id === tweet.userId;
+  const isOwnTweet = user && tweet.userId && (user.id?.toString() === tweet.userId?.toString());
+  
+  // Debug logging
+  if (user && tweet.userId) {
+    console.log('TweetCard debug:', {
+      userId: user.id,
+      userIdType: typeof user.id,
+      tweetUserId: tweet.userId, 
+      tweetUserIdType: typeof tweet.userId,
+      isOwnTweet,
+      tweetId: tweet.id
+    });
+  }
 
   const handleLike = async () => {
     if (user) {

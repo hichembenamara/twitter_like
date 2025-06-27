@@ -15,6 +15,7 @@ export interface Tweet {
   bookmarks: string[]; // Store user IDs who bookmarked
   hashtags: string[];
   createdAt: string;
+  isVerified?: boolean;
 }
 
 export interface Reply {
@@ -134,6 +135,7 @@ export const useTweetStore = create<TweetState>((set, get) => ({
           bookmarks: [], // Placeholder, backend Post entity doesn't have bookmarks
           hashtags: get().extractHashtags(post.Contenu || post.Titre || ''), // Basic hashtag extraction
           createdAt: post.Creation,
+          isVerified: false, // Default to false for now
         };
       });
       set({ tweets: formattedTweets });
@@ -184,6 +186,7 @@ export const useTweetStore = create<TweetState>((set, get) => ({
           bookmarks: [],
           hashtags: get().extractHashtags(post.Contenu || post.Titre || ''),
           createdAt: post.createdAt,
+          isVerified: false,
         };
       });
       
@@ -268,6 +271,7 @@ export const useTweetStore = create<TweetState>((set, get) => ({
         bookmarks: [], // Assuming not part of create response
         hashtags: get().extractHashtags(createdPostFromBackend.Contenu || createdPostFromBackend.Titre || ''),
         createdAt: createdPostFromBackend.Creation,
+        isVerified: false,
       };
 
       set(state => ({

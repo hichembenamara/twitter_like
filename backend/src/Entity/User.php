@@ -61,7 +61,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\NotBlank(message: "Le nom d'affichage ne peut pas être vide.")]
     private ?string $nom = null;
 
-    #[ORM\Column(length: 200)]
+    #[ORM\Column(length: 200, nullable: true)]
     #[Groups(['user:read', 'post:read', 'comment:read'])] // Path to image file or name
     private ?string $imageFile = null;
 
