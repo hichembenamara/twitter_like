@@ -32,7 +32,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
       } else {
         toast({
           title: "Échec de la connexion",
-          description: "Email ou mot de passe invalide. Essayez email: test@example.com, mot de passe: password",
+          description: "Email ou mot de passe invalide.",
           variant: "destructive",
         });
       }
@@ -62,7 +62,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             <Input
               id="email"
               type="email"
-              placeholder="test@example.com"
+              placeholder="votre@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -73,7 +73,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             <Input
               id="password"
               type="password"
-              placeholder="password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -96,16 +96,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
           >
             S'inscrire
           </button>
-        </div>
-        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 text-sm">
-          <div className="flex items-center mb-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-            <strong className="text-blue-800">Demo credentials:</strong>
-          </div>
-          <div className="ml-4 text-gray-700 space-y-1">
-            <div>📧 Email: <code className="bg-white px-2 py-1 rounded text-blue-600">test@example.com</code></div>
-            <div>🔑 Password: <code className="bg-white px-2 py-1 rounded text-blue-600">password</code></div>
-          </div>
         </div>
       </CardContent>
     </Card>

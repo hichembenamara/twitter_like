@@ -85,6 +85,14 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
         displayName: formData.displayName,
         username: formData.username
       });
+      // Clear form data after successful signup
+      setFormData({
+        email: '',
+        username: '',
+        displayName: '',
+        password: '',
+        confirmPassword: ''
+      });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       if (errorMessage.includes('Username already in use')) {
